@@ -1,20 +1,39 @@
 package com.nagi.dosecircle
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.nagi.dosecircle.ui.screens.MedicationListScreen
+import com.nagi.dosecircle.ui.theme.DoseCircleTheme
+import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+
+        val app = application as DoseCircleApp
+
+        setContent {
+            DoseCircleTheme {
+                val navController = rememberNavController()
+                NavHost(
+                    navController = navController,
+                    startDestination = "medication_list"
+                ) {
+                    composable("medication_list") {
+                        val viewModel: MedicationListViewModel = viewModel(
+                            factory = MedicationListViewModel.provideFactory(app)
+                        )
+                        MedicationListScreen(viewModel = viewModel)
+                    }
+                }
+            }
         }
     }
 }
