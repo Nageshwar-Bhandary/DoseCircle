@@ -5,6 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.nagi.dosecircle.data.dao.MedicationDao
+import com.nagi.dosecircle.data.dao.PersonDao
+import com.nagi.dosecircle.data.dao.ScheduleDao
+import com.nagi.dosecircle.data.dao.ScheduleTimeDao
 import com.nagi.dosecircle.data.entity.DoseEvent
 import com.nagi.dosecircle.data.entity.Medication
 import com.nagi.dosecircle.data.entity.Person
@@ -24,6 +28,11 @@ import com.nagi.dosecircle.data.entity.ScheduleTime
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
+
+    abstract fun personDao(): PersonDao
+    abstract fun medicationDao(): MedicationDao
+    abstract fun scheduleDao(): ScheduleDao
+    abstract fun scheduleTimeDao(): ScheduleTimeDao
 
     companion object {
         @Volatile
