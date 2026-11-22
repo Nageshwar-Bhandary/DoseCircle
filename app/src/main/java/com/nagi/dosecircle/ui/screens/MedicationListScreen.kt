@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.nagi.dosecircle.data.entity.Medication
+import com.nagi.dosecircle.util.RequestNotificationPermissionEffect
 import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 import java.io.File
 
@@ -60,6 +61,8 @@ fun MedicationListScreen(
     onNavigateToEditMedication: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    RequestNotificationPermissionEffect()
+
     val medications by viewModel.medications.collectAsState()
     var medicationToDelete by remember { mutableStateOf<Medication?>(null) }
 

@@ -5,8 +5,14 @@ import com.nagi.dosecircle.data.database.AppDatabase
 import com.nagi.dosecircle.data.repository.DoseEventRepository
 import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
+import com.nagi.dosecircle.util.NotificationHelper
 
 class DoseCircleApp : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+        NotificationHelper.createNotificationChannels(this)
+    }
 
     val database: AppDatabase by lazy {
         AppDatabase.getDatabase(this)
