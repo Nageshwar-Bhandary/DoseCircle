@@ -13,6 +13,7 @@ local.properties
 /captures
 .externalNativeBuild
 .cxx
+.kotlin/
 
 # Secrets & Environment files
 .env
