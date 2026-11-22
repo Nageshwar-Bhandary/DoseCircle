@@ -46,6 +46,7 @@ import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 @Composable
 fun MedicationListScreen(
     viewModel: MedicationListViewModel,
+    onNavigateToAddMedication: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val medications by viewModel.medications.collectAsState()
@@ -63,7 +64,7 @@ fun MedicationListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* Will navigate to Add Medication in later task */ }
+                onClick = onNavigateToAddMedication
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,

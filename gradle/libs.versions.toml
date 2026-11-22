@@ -10,7 +10,7 @@ activityKtx = "1.13.0"
 constraintlayout = "2.2.2"
 ksp = "2.2.10-2.0.2"
 room = "2.7.2"
-composeBom = "2024.12.01"
+composeBom = "2025.10.00"
 activityCompose = "1.10.1"
 lifecycleViewModelCompose = "2.8.7"
 navigationCompose = "2.8.5"
@@ -34,6 +34,7 @@ androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graph
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material-icons = { group = "androidx.compose.material", name = "material-icons-core" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewModelCompose" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }

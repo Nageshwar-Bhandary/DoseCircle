@@ -8,8 +8,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.nagi.dosecircle.ui.screens.AddMedicationScreen
 import com.nagi.dosecircle.ui.screens.MedicationListScreen
 import com.nagi.dosecircle.ui.theme.DoseCircleTheme
+import com.nagi.dosecircle.viewmodel.AddMedicationViewModel
 import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 
 class MainActivity : ComponentActivity() {
@@ -30,7 +32,23 @@ class MainActivity : ComponentActivity() {
                         val viewModel: MedicationListViewModel = viewModel(
                             factory = MedicationListViewModel.provideFactory(app)
                         )
-                        MedicationListScreen(viewModel = viewModel)
+                        MedicationListScreen(
+                            viewModel = viewModel,
+                            onNavigateToAddMedication = {
+                                navController.navigate("add_medication")
+                            }
+                        )
+                    }
+                    composable("add_medication") {
+                        val viewModel: AddMedicationViewModel = viewModel(
+                            factory = AddMedicationViewModel.provideFactory(app)
+                        )
+                        AddMedicationScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            }
+                        )
                     }
                 }
             }
