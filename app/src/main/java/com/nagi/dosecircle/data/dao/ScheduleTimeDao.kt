@@ -20,4 +20,7 @@ interface ScheduleTimeDao {
 
     @Query("SELECT * FROM schedule_times WHERE scheduleId = :scheduleId")
     suspend fun getTimesForScheduleDirect(scheduleId: Long): List<ScheduleTime>
+
+    @Query("SELECT * FROM schedule_times WHERE id = :id LIMIT 1")
+    suspend fun getScheduleTimeById(id: Long): ScheduleTime?
 }

@@ -106,4 +106,8 @@ class MedicationRepository(private val database: AppDatabase) {
     suspend fun getTimesForScheduleDirect(scheduleId: Long): List<ScheduleTime> {
         return scheduleTimeDao.getTimesForScheduleDirect(scheduleId)
     }
+
+    suspend fun getScheduleTimeById(id: Long): ScheduleTime? {
+        return scheduleTimeDao.getScheduleTimeById(id)
+    }
 }

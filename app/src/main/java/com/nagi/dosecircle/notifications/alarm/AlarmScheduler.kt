@@ -66,6 +66,50 @@ class AlarmScheduler(
         }
     }
 
+    suspend fun scheduleNextForScheduleTime(scheduleTimeId: Long): Long? {
+        if (!PermissionHelper.canScheduleExactAlarms(context)) {
+            Log.w(TAG, "Exact alarms permission not granted. Skipping scheduleTimeId: $scheduleTimeId")
+            return null
+        }
+
+        val scheduleTime = medicationRepository.getScheduleTimeById(scheduleTimeId) ?: return null
+        val schedule = medicationRepository.getScheduleById(scheduleTime.scheduleId) ?: return null
+        if (!schedule.isActive) {
+            cancelAlarmForScheduleTime(scheduleTimeId)
+            return null
+        }
+
+        val selectedDays = schedule.daysOfWeek
+            .split(",")
+            .mapNotNull { it.trim().toIntOrNull() }
+            .toSet()
+
+        if (selectedDays.isEmpty()) return null
+
+        val nextTriggerMillis = calculateNextTriggerTime(
+            schedule = schedule,
+            selectedDays = selectedDays,
+            hour = scheduleTime.hour,
+            minute = scheduleTime.minute
+        )
+
+        if (nextTriggerMillis != null) {
+            scheduleExactAlarm(
+                scheduleTime = scheduleTime,
+                medicationId = schedule.medicationId,
+                personId = schedule.personId,
+                triggerAtMillis = nextTriggerMillis
+            )
+            Log.d(
+                TAG,
+                "Rescheduled next alarm for scheduleTimeId=$scheduleTimeId at $nextTriggerMillis (${LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(nextTriggerMillis), ZoneId.systemDefault())})"
+            )
+        } else {
+            cancelAlarmForScheduleTime(scheduleTime.id)
+        }
+        return nextTriggerMillis
+    }
+
     suspend fun cancelForSchedule(scheduleId: Long) {
         val times = medicationRepository.getTimesForScheduleDirect(scheduleId)
         for (time in times) {
