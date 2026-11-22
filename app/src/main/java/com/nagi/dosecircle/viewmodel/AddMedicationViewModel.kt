@@ -9,6 +9,7 @@ import com.nagi.dosecircle.data.entity.Schedule
 import com.nagi.dosecircle.data.entity.ScheduleTime
 import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
+import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
 import com.nagi.dosecircle.util.ImageStorageHelper
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,6 +51,7 @@ data class AddMedicationUiState(
 class AddMedicationViewModel(
     private val personRepository: PersonRepository,
     private val medicationRepository: MedicationRepository,
+    private val alarmScheduler: AlarmScheduler? = null,
     private val medicationId: Long? = null
 ) : ViewModel() {
 
@@ -229,7 +231,7 @@ class AddMedicationViewModel(
 
             val sortedDaysString = state.selectedDays.sorted().joinToString(",")
 
-            if (state.isEditMode && medicationId != null) {
+            val savedScheduleId = if (state.isEditMode && medicationId != null) {
                 val med = Medication(
                     id = medicationId,
                     personId = defaultPerson.id,
@@ -258,6 +260,10 @@ class AddMedicationViewModel(
                         hour = it.hour,
                         minute = it.minute
                     )
+                }
+
+                if (sched.id != 0L) {
+                    alarmScheduler?.cancelForSchedule(sched.id)
                 }
 
                 medicationRepository.updateMedicationWithSchedule(
@@ -301,6 +307,10 @@ class AddMedicationViewModel(
                 )
             }
 
+            if (savedScheduleId > 0) {
+                alarmScheduler?.scheduleForSchedule(savedScheduleId)
+            }
+
             _uiState.update { it.copy(isSaving = false) }
             _saveSuccessEvent.emit(Unit)
         }
@@ -324,6 +334,7 @@ class AddMedicationViewModel(
                         return AddMedicationViewModel(
                             personRepository = app.personRepository,
                             medicationRepository = app.medicationRepository,
+                            alarmScheduler = app.alarmScheduler,
                             medicationId = medicationId
                         ) as T
                     }

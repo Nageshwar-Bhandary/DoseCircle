@@ -17,4 +17,7 @@ interface ScheduleTimeDao {
 
     @Query("SELECT * FROM schedule_times WHERE scheduleId = :scheduleId")
     fun getTimesForSchedule(scheduleId: Long): Flow<List<ScheduleTime>>
+
+    @Query("SELECT * FROM schedule_times WHERE scheduleId = :scheduleId")
+    suspend fun getTimesForScheduleDirect(scheduleId: Long): List<ScheduleTime>
 }

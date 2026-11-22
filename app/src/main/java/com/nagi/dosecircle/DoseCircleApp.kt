@@ -5,6 +5,7 @@ import com.nagi.dosecircle.data.database.AppDatabase
 import com.nagi.dosecircle.data.repository.DoseEventRepository
 import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
+import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
 import com.nagi.dosecircle.util.NotificationHelper
 
 class DoseCircleApp : Application() {
@@ -28,5 +29,13 @@ class DoseCircleApp : Application() {
 
     val doseEventRepository: DoseEventRepository by lazy {
         DoseEventRepository(database.doseEventDao())
+    }
+
+    val alarmScheduler: AlarmScheduler by lazy {
+        AlarmScheduler(
+            context = this,
+            personRepository = personRepository,
+            medicationRepository = medicationRepository
+        )
     }
 }
