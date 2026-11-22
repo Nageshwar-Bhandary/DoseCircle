@@ -1,6 +1,7 @@
 package com.nagi.dosecircle.notifications.receiver
 
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,6 +9,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.nagi.dosecircle.DoseCircleApp
+import com.nagi.dosecircle.MainActivity
 import com.nagi.dosecircle.R
 import com.nagi.dosecircle.data.entity.DoseEvent
 import com.nagi.dosecircle.data.entity.DoseStatus
@@ -95,6 +97,44 @@ class DoseAlarmReceiver : BroadcastReceiver() {
     ) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+        // Content intent: tapping notification body opens MainActivity
+        val contentIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("doseEventId", doseEventId)
+        }
+        val contentPendingIntent = PendingIntent.getActivity(
+            context,
+            doseEventId.toInt(),
+            contentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Action "Taken"
+        val takenIntent = Intent(context, DoseActionReceiver::class.java).apply {
+            action = Constants.ACTION_TAKEN
+            putExtra("doseEventId", doseEventId)
+        }
+        val takenRequestCode = (doseEventId * 31 + 1).toInt()
+        val takenPendingIntent = PendingIntent.getBroadcast(
+            context,
+            takenRequestCode,
+            takenIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Action "Skip"
+        val skipIntent = Intent(context, DoseActionReceiver::class.java).apply {
+            action = Constants.ACTION_SKIP
+            putExtra("doseEventId", doseEventId)
+        }
+        val skipRequestCode = (doseEventId * 31 + 2).toInt()
+        val skipPendingIntent = PendingIntent.getBroadcast(
+            context,
+            skipRequestCode,
+            skipIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val extras = Bundle().apply {
             putLong("doseEventId", doseEventId)
         }
@@ -104,7 +144,10 @@ class DoseAlarmReceiver : BroadcastReceiver() {
             .setContentTitle("Time to take your medicine")
             .setContentText("$medicationName ($dosage)")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(contentPendingIntent)
             .setAutoCancel(true)
+            .addAction(0, "Taken", takenPendingIntent)
+            .addAction(0, "Skip", skipPendingIntent)
             .setExtras(extras)
             .build()
 
