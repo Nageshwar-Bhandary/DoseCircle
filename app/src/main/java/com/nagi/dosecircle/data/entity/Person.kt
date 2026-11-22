@@ -8,5 +8,7 @@ data class Person(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
-    val isDefault: Boolean = false
+    val isDefault: Boolean = false,
+    val cloudUid: String? = null,
+    val email: String? = null
 )
