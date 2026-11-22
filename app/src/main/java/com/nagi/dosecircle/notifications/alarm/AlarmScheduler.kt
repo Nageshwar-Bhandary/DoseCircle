@@ -25,16 +25,16 @@ class AlarmScheduler(
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
 
-    suspend fun scheduleForSchedule(scheduleId: Long) {
+    suspend fun scheduleForSchedule(scheduleId: Long): Int {
         if (!PermissionHelper.canScheduleExactAlarms(context)) {
             Log.w(TAG, "Exact alarms permission not granted. Skipping schedule: $scheduleId")
-            return
+            return 0
         }
 
-        val schedule = medicationRepository.getScheduleById(scheduleId) ?: return
+        val schedule = medicationRepository.getScheduleById(scheduleId) ?: return 0
         if (!schedule.isActive) {
             cancelForSchedule(scheduleId)
-            return
+            return 0
         }
 
         val times = medicationRepository.getTimesForScheduleDirect(scheduleId)
@@ -43,8 +43,9 @@ class AlarmScheduler(
             .mapNotNull { it.trim().toIntOrNull() }
             .toSet()
 
-        if (selectedDays.isEmpty()) return
+        if (selectedDays.isEmpty()) return 0
 
+        var scheduledCount = 0
         for (time in times) {
             val nextTriggerMillis = calculateNextTriggerTime(
                 schedule = schedule,
@@ -60,10 +61,12 @@ class AlarmScheduler(
                     personId = schedule.personId,
                     triggerAtMillis = nextTriggerMillis
                 )
+                scheduledCount++
             } else {
                 cancelAlarmForScheduleTime(time.id)
             }
         }
+        return scheduledCount
     }
 
     suspend fun scheduleNextForScheduleTime(scheduleTimeId: Long): Long? {
@@ -117,16 +120,19 @@ class AlarmScheduler(
         }
     }
 
-    suspend fun rescheduleAll() {
+    suspend fun rescheduleAll(): Int {
         if (!PermissionHelper.canScheduleExactAlarms(context)) {
             Log.w(TAG, "Exact alarms permission not granted. Skipping rescheduleAll.")
-            return
+            return 0
         }
 
         val activeSchedules = medicationRepository.getAllActiveSchedules()
+        var totalScheduled = 0
         for (schedule in activeSchedules) {
-            scheduleForSchedule(schedule.id)
+            totalScheduled += scheduleForSchedule(schedule.id)
         }
+        Log.d(TAG, "rescheduleAll completed. Total alarms scheduled: $totalScheduled across ${activeSchedules.size} active schedules")
+        return totalScheduled
     }
 
     private fun scheduleExactAlarm(
