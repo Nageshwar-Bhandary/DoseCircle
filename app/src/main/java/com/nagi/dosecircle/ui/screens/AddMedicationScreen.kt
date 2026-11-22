@@ -83,7 +83,7 @@ fun AddMedicationScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Medicine") },
+                title = { Text(if (state.isEditMode) "Edit Medicine" else "Add Medicine") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -249,7 +249,7 @@ fun AddMedicationScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Save Button
+            // Save / Update Button
             Button(
                 onClick = { viewModel.save() },
                 enabled = !state.isSaving,
@@ -263,7 +263,10 @@ fun AddMedicationScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Save Medicine", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (state.isEditMode) "Update" else "Save Medicine",
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
             }
         }

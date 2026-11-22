@@ -47,6 +47,7 @@ import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 fun MedicationListScreen(
     viewModel: MedicationListViewModel,
     onNavigateToAddMedication: () -> Unit,
+    onNavigateToEditMedication: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val medications by viewModel.medications.collectAsState()
@@ -103,6 +104,7 @@ fun MedicationListScreen(
                 ) { medication ->
                     MedicationItemCard(
                         medication = medication,
+                        onClick = { onNavigateToEditMedication(medication.id) },
                         onDeleteClick = { medicationToDelete = medication }
                     )
                 }
@@ -139,10 +141,12 @@ fun MedicationListScreen(
 @Composable
 fun MedicationItemCard(
     medication: Medication,
+    onClick: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {

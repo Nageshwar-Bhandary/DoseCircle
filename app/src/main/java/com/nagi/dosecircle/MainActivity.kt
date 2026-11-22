@@ -5,9 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.nagi.dosecircle.ui.screens.AddMedicationScreen
 import com.nagi.dosecircle.ui.screens.MedicationListScreen
 import com.nagi.dosecircle.ui.theme.DoseCircleTheme
@@ -36,12 +38,33 @@ class MainActivity : ComponentActivity() {
                             viewModel = viewModel,
                             onNavigateToAddMedication = {
                                 navController.navigate("add_medication")
+                            },
+                            onNavigateToEditMedication = { medicationId ->
+                                navController.navigate("edit_medication/$medicationId")
                             }
                         )
                     }
                     composable("add_medication") {
                         val viewModel: AddMedicationViewModel = viewModel(
                             factory = AddMedicationViewModel.provideFactory(app)
+                        )
+                        AddMedicationScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                    composable(
+                        route = "edit_medication/{medicationId}",
+                        arguments = listOf(
+                            navArgument("medicationId") { type = NavType.LongType }
+                        )
+                    ) { backStackEntry ->
+                        val medicationId = backStackEntry.arguments?.getLong("medicationId")
+                        val viewModel: AddMedicationViewModel = viewModel(
+                            key = "edit_medication_$medicationId",
+                            factory = AddMedicationViewModel.provideFactory(app, medicationId)
                         )
                         AddMedicationScreen(
                             viewModel = viewModel,

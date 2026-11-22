@@ -6,6 +6,7 @@ import com.nagi.dosecircle.data.entity.Medication
 import com.nagi.dosecircle.data.entity.Schedule
 import com.nagi.dosecircle.data.entity.ScheduleTime
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 
 data class ScheduleWithTimes(
     val schedule: Schedule,
@@ -42,6 +43,29 @@ class MedicationRepository(private val database: AppDatabase) {
                 scheduleTimeDao.insertScheduleTimes(timesToInsert)
             }
             medicationId
+        }
+    }
+
+    suspend fun updateMedicationWithSchedule(
+        medication: Medication,
+        schedule: Schedule,
+        times: List<ScheduleTime>
+    ) {
+        database.withTransaction {
+            medicationDao.updateMedication(medication)
+            val scheduleId = if (schedule.id != 0L) {
+                scheduleDao.updateSchedule(schedule)
+                schedule.id
+            } else {
+                scheduleDao.insertSchedule(schedule.copy(medicationId = medication.id))
+            }
+            scheduleTimeDao.deleteTimesForSchedule(scheduleId)
+            val timesToInsert = times.map { time ->
+                time.copy(id = 0, scheduleId = scheduleId)
+            }
+            if (timesToInsert.isNotEmpty()) {
+                scheduleTimeDao.insertScheduleTimes(timesToInsert)
+            }
         }
     }
 

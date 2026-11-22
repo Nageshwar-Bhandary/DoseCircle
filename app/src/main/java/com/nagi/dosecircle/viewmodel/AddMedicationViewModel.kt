@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -29,6 +30,8 @@ data class TimeItem(
 }
 
 data class AddMedicationUiState(
+    val isEditMode: Boolean = false,
+    val medicationId: Long? = null,
     val name: String = "",
     val dosage: String = "",
     val instructions: String = "",
@@ -44,14 +47,65 @@ data class AddMedicationUiState(
 
 class AddMedicationViewModel(
     private val personRepository: PersonRepository,
-    private val medicationRepository: MedicationRepository
+    private val medicationRepository: MedicationRepository,
+    private val medicationId: Long? = null
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AddMedicationUiState())
+    private val _uiState = MutableStateFlow(
+        AddMedicationUiState(
+            isEditMode = medicationId != null,
+            medicationId = medicationId
+        )
+    )
     val uiState: StateFlow<AddMedicationUiState> = _uiState.asStateFlow()
 
     private val _saveSuccessEvent = MutableSharedFlow<Unit>()
     val saveSuccessEvent: SharedFlow<Unit> = _saveSuccessEvent.asSharedFlow()
+
+    private var existingSchedule: Schedule? = null
+
+    init {
+        if (medicationId != null) {
+            loadExistingMedication(medicationId)
+        }
+    }
+
+    private fun loadExistingMedication(medId: Long) {
+        viewModelScope.launch {
+            val med = medicationRepository.getMedicationById(medId) ?: return@launch
+            val schedules = medicationRepository.getSchedulesForMedication(medId).firstOrNull() ?: emptyList()
+            val primarySchedule = schedules.firstOrNull()
+            existingSchedule = primarySchedule
+
+            val scheduleTimes = if (primarySchedule != null) {
+                medicationRepository.getTimesForSchedule(primarySchedule.id).firstOrNull() ?: emptyList()
+            } else {
+                emptyList()
+            }
+
+            val loadedDays = primarySchedule?.daysOfWeek
+                ?.split(",")
+                ?.mapNotNull { it.trim().toIntOrNull() }
+                ?.toSet()
+                ?: setOf(1, 2, 3, 4, 5, 6, 7)
+
+            val loadedTimes = scheduleTimes.map {
+                TimeItem(hour = it.hour, minute = it.minute)
+            }.sortedWith(compareBy({ it.hour }, { it.minute }))
+
+            _uiState.update { current ->
+                current.copy(
+                    name = med.name,
+                    dosage = med.dosage,
+                    instructions = med.instructions,
+                    stockCount = med.stockCount.toString(),
+                    lowStockThreshold = med.lowStockThreshold.toString(),
+                    selectedDays = if (loadedDays.isNotEmpty()) loadedDays else setOf(1, 2, 3, 4, 5, 6, 7),
+                    times = loadedTimes
+                )
+            }
+        }
+    }
 
     fun onNameChange(name: String) {
         _uiState.update { it.copy(name = name, nameError = null) }
@@ -149,38 +203,76 @@ class AddMedicationViewModel(
                 .toInstant()
                 .toEpochMilli()
 
-            val medication = Medication(
-                personId = defaultPerson.id,
-                name = trimmedName,
-                dosage = state.dosage.trim(),
-                instructions = state.instructions.trim(),
-                stockCount = state.stockCount.toIntOrNull() ?: 0,
-                lowStockThreshold = state.lowStockThreshold.toIntOrNull() ?: 0
-            )
-
             val sortedDaysString = state.selectedDays.sorted().joinToString(",")
-            val schedule = Schedule(
-                personId = defaultPerson.id,
-                medicationId = 0,
-                startDate = startOfDayMillis,
-                endDate = null,
-                daysOfWeek = sortedDaysString,
-                isActive = true
-            )
 
-            val scheduleTimes = state.times.map {
-                ScheduleTime(
-                    scheduleId = 0,
-                    hour = it.hour,
-                    minute = it.minute
+            if (state.isEditMode && medicationId != null) {
+                val med = Medication(
+                    id = medicationId,
+                    personId = defaultPerson.id,
+                    name = trimmedName,
+                    dosage = state.dosage.trim(),
+                    instructions = state.instructions.trim(),
+                    stockCount = state.stockCount.toIntOrNull() ?: 0,
+                    lowStockThreshold = state.lowStockThreshold.toIntOrNull() ?: 0
+                )
+
+                val sched = existingSchedule?.copy(
+                    daysOfWeek = sortedDaysString
+                ) ?: Schedule(
+                    personId = defaultPerson.id,
+                    medicationId = medicationId,
+                    startDate = startOfDayMillis,
+                    endDate = null,
+                    daysOfWeek = sortedDaysString,
+                    isActive = true
+                )
+
+                val scheduleTimes = state.times.map {
+                    ScheduleTime(
+                        scheduleId = sched.id,
+                        hour = it.hour,
+                        minute = it.minute
+                    )
+                }
+
+                medicationRepository.updateMedicationWithSchedule(
+                    medication = med,
+                    schedule = sched,
+                    times = scheduleTimes
+                )
+            } else {
+                val medication = Medication(
+                    personId = defaultPerson.id,
+                    name = trimmedName,
+                    dosage = state.dosage.trim(),
+                    instructions = state.instructions.trim(),
+                    stockCount = state.stockCount.toIntOrNull() ?: 0,
+                    lowStockThreshold = state.lowStockThreshold.toIntOrNull() ?: 0
+                )
+
+                val schedule = Schedule(
+                    personId = defaultPerson.id,
+                    medicationId = 0,
+                    startDate = startOfDayMillis,
+                    endDate = null,
+                    daysOfWeek = sortedDaysString,
+                    isActive = true
+                )
+
+                val scheduleTimes = state.times.map {
+                    ScheduleTime(
+                        scheduleId = 0,
+                        hour = it.hour,
+                        minute = it.minute
+                    )
+                }
+
+                medicationRepository.saveMedicationWithSchedule(
+                    medication = medication,
+                    schedule = schedule,
+                    times = scheduleTimes
                 )
             }
-
-            medicationRepository.saveMedicationWithSchedule(
-                medication = medication,
-                schedule = schedule,
-                times = scheduleTimes
-            )
 
             _uiState.update { it.copy(isSaving = false) }
             _saveSuccessEvent.emit(Unit)
@@ -188,14 +280,15 @@ class AddMedicationViewModel(
     }
 
     companion object {
-        fun provideFactory(app: DoseCircleApp): ViewModelProvider.Factory =
+        fun provideFactory(app: DoseCircleApp, medicationId: Long? = null): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     if (modelClass.isAssignableFrom(AddMedicationViewModel::class.java)) {
                         return AddMedicationViewModel(
                             personRepository = app.personRepository,
-                            medicationRepository = app.medicationRepository
+                            medicationRepository = app.medicationRepository,
+                            medicationId = medicationId
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
