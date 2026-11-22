@@ -2,6 +2,7 @@ package com.nagi.dosecircle.data.repository
 
 import com.google.android.gms.tasks.Task
 import com.google.firebase.FirebaseNetworkException
+import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -9,6 +10,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -71,6 +73,35 @@ class AuthRepository(
         }
     }
 
+    suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> {
+        val trimmedToken = idToken.trim()
+
+        if (trimmedToken.isEmpty()) {
+            return Result.failure(IllegalArgumentException("Google ID token cannot be empty."))
+        }
+
+        return try {
+            val credential = GoogleAuthProvider.getCredential(trimmedToken, null)
+            signInWithCredential(credential)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(Exception(getReadableErrorMessage(e), e))
+        }
+    }
+
+    suspend fun signInWithCredential(credential: AuthCredential): Result<FirebaseUser> {
+        return try {
+            val authResult = auth.signInWithCredential(credential).await()
+            val user = authResult.user ?: throw IllegalStateException("Google sign-in succeeded but user details are unavailable.")
+            Result.success(user)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(Exception(getReadableErrorMessage(e), e))
+        }
+    }
+
     fun logout(): Result<Unit> {
         return try {
             auth.signOut()
@@ -109,11 +140,11 @@ class AuthRepository(
                 when (e.errorCode) {
                     "ERROR_INVALID_EMAIL" -> "Please enter a valid email address."
                     "ERROR_WRONG_PASSWORD" -> "Incorrect password. Please try again."
-                    else -> "Invalid email or password. Please verify your credentials."
+                    else -> "Invalid or expired credentials. Please try signing in again."
                 }
             }
             is FirebaseAuthUserCollisionException -> {
-                "An account with this email address already exists."
+                "An account with this email address already exists with a different sign-in method."
             }
             is FirebaseAuthWeakPasswordException -> {
                 "The password is too weak. Please use at least 6 characters."
@@ -123,13 +154,19 @@ class AuthRepository(
             }
             is FirebaseAuthException -> {
                 when (e.errorCode) {
-                    "ERROR_OPERATION_NOT_ALLOWED" -> "Email and password authentication is currently disabled."
+                    "ERROR_OPERATION_NOT_ALLOWED" -> "This sign-in method is currently disabled."
                     "ERROR_TOO_MANY_REQUESTS" -> "Too many unsuccessful attempts. Please try again later."
                     else -> "Authentication failed. Please check your credentials and try again."
                 }
             }
             is IllegalArgumentException -> e.message ?: "Invalid input provided."
-            else -> "An unexpected error occurred. Please try again."
+            else -> {
+                if (e.message?.contains("cancel", ignoreCase = true) == true) {
+                    "Sign-in was cancelled."
+                } else {
+                    "An unexpected error occurred. Please try again."
+                }
+            }
         }
     }
 
