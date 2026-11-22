@@ -9,6 +9,7 @@ import com.nagi.dosecircle.data.entity.Schedule
 import com.nagi.dosecircle.data.entity.ScheduleTime
 import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
+import com.nagi.dosecircle.util.ImageStorageHelper
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -35,6 +36,7 @@ data class AddMedicationUiState(
     val name: String = "",
     val dosage: String = "",
     val instructions: String = "",
+    val photoUri: String? = null,
     val stockCount: String = "0",
     val lowStockThreshold: String = "0",
     val selectedDays: Set<Int> = setOf(1, 2, 3, 4, 5, 6, 7), // 1 = Monday ... 7 = Sunday
@@ -62,6 +64,7 @@ class AddMedicationViewModel(
     private val _saveSuccessEvent = MutableSharedFlow<Unit>()
     val saveSuccessEvent: SharedFlow<Unit> = _saveSuccessEvent.asSharedFlow()
 
+    private var initialPhotoUri: String? = null
     private var existingSchedule: Schedule? = null
 
     init {
@@ -73,6 +76,7 @@ class AddMedicationViewModel(
     private fun loadExistingMedication(medId: Long) {
         viewModelScope.launch {
             val med = medicationRepository.getMedicationById(medId) ?: return@launch
+            initialPhotoUri = med.photoUri
             val schedules = medicationRepository.getSchedulesForMedication(medId).firstOrNull() ?: emptyList()
             val primarySchedule = schedules.firstOrNull()
             existingSchedule = primarySchedule
@@ -98,6 +102,7 @@ class AddMedicationViewModel(
                     name = med.name,
                     dosage = med.dosage,
                     instructions = med.instructions,
+                    photoUri = med.photoUri,
                     stockCount = med.stockCount.toString(),
                     lowStockThreshold = med.lowStockThreshold.toString(),
                     selectedDays = if (loadedDays.isNotEmpty()) loadedDays else setOf(1, 2, 3, 4, 5, 6, 7),
@@ -117,6 +122,25 @@ class AddMedicationViewModel(
 
     fun onInstructionsChange(instructions: String) {
         _uiState.update { it.copy(instructions = instructions) }
+    }
+
+    fun onPhotoUriChange(savedFilePath: String) {
+        _uiState.update { current ->
+            // If user already picked a temporary replacement photo during this session that wasn't initialPhotoUri, clean it
+            if (current.photoUri != null && current.photoUri != initialPhotoUri && current.photoUri != savedFilePath) {
+                ImageStorageHelper.deleteFile(current.photoUri)
+            }
+            current.copy(photoUri = savedFilePath)
+        }
+    }
+
+    fun onRemovePhoto() {
+        _uiState.update { current ->
+            if (current.photoUri != null && current.photoUri != initialPhotoUri) {
+                ImageStorageHelper.deleteFile(current.photoUri)
+            }
+            current.copy(photoUri = null)
+        }
     }
 
     fun onStockCountChange(stock: String) {
@@ -212,6 +236,7 @@ class AddMedicationViewModel(
                     name = trimmedName,
                     dosage = state.dosage.trim(),
                     instructions = state.instructions.trim(),
+                    photoUri = state.photoUri,
                     stockCount = state.stockCount.toIntOrNull() ?: 0,
                     lowStockThreshold = state.lowStockThreshold.toIntOrNull() ?: 0
                 )
@@ -238,7 +263,8 @@ class AddMedicationViewModel(
                 medicationRepository.updateMedicationWithSchedule(
                     medication = med,
                     schedule = sched,
-                    times = scheduleTimes
+                    times = scheduleTimes,
+                    oldPhotoUri = initialPhotoUri
                 )
             } else {
                 val medication = Medication(
@@ -246,6 +272,7 @@ class AddMedicationViewModel(
                     name = trimmedName,
                     dosage = state.dosage.trim(),
                     instructions = state.instructions.trim(),
+                    photoUri = state.photoUri,
                     stockCount = state.stockCount.toIntOrNull() ?: 0,
                     lowStockThreshold = state.lowStockThreshold.toIntOrNull() ?: 0
                 )
@@ -276,6 +303,15 @@ class AddMedicationViewModel(
 
             _uiState.update { it.copy(isSaving = false) }
             _saveSuccessEvent.emit(Unit)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // If the user picked a photo but navigated away without saving in Add mode:
+        val state = _uiState.value
+        if (!state.isEditMode && state.photoUri != null) {
+            ImageStorageHelper.deleteFile(state.photoUri)
         }
     }
 

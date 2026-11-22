@@ -49,9 +49,13 @@ class MedicationRepository(private val database: AppDatabase) {
     suspend fun updateMedicationWithSchedule(
         medication: Medication,
         schedule: Schedule,
-        times: List<ScheduleTime>
+        times: List<ScheduleTime>,
+        oldPhotoUri: String? = null
     ) {
         database.withTransaction {
+            if (oldPhotoUri != null && oldPhotoUri != medication.photoUri) {
+                com.nagi.dosecircle.util.ImageStorageHelper.deleteFile(oldPhotoUri)
+            }
             medicationDao.updateMedication(medication)
             val scheduleId = if (schedule.id != 0L) {
                 scheduleDao.updateSchedule(schedule)
@@ -74,7 +78,12 @@ class MedicationRepository(private val database: AppDatabase) {
     }
 
     suspend fun deleteMedication(medication: Medication) {
-        medicationDao.deleteMedication(medication)
+        database.withTransaction {
+            medication.photoUri?.let { path ->
+                com.nagi.dosecircle.util.ImageStorageHelper.deleteFile(path)
+            }
+            medicationDao.deleteMedication(medication)
+        }
     }
 
     fun getSchedulesForMedication(medicationId: Long): Flow<List<Schedule>> {
