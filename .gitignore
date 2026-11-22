@@ -1,7 +1,7 @@
 *.iml
 .gradle
 /local.properties
-google-services.json
+local.properties
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
@@ -13,5 +13,13 @@ google-services.json
 /captures
 .externalNativeBuild
 .cxx
-local.properties
+
+# Secrets & Environment files
+.env
+.env.*
+*.env
+*.jks
+*.keystore
+secrets.properties
 google-services.json
+*/google-services.json
