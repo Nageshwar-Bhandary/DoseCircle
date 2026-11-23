@@ -1,0 +1,13 @@
+package com.nagi.dosecircle.auth
+
+import com.google.firebase.auth.FirebaseUser
+
+/**
+ * Represents the authentication states for the UI layer.
+ */
+sealed interface AuthState {
+    data object Idle : AuthState
+    data object Loading : AuthState
+    data class Success(val user: FirebaseUser) : AuthState
+    data class Error(val message: String) : AuthState
+}

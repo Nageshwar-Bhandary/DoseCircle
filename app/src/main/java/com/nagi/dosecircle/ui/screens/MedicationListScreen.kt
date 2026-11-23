@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
@@ -58,15 +59,25 @@ fun MedicationListScreen(
     viewModel: MedicationListViewModel,
     onNavigateToAddMedication: () -> Unit,
     onNavigateToEditMedication: (Long) -> Unit,
+    onSignOut: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val medications by viewModel.medications.collectAsState()
     var medicationToDelete by remember { mutableStateOf<Medication?>(null) }
+    var showSignOutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("My Medicines") },
+                actions = {
+                    IconButton(onClick = { showSignOutDialog = true }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Sign Out"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -139,6 +150,31 @@ fun MedicationListScreen(
                 dismissButton = {
                     TextButton(
                         onClick = { medicationToDelete = null }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showSignOutDialog) {
+            AlertDialog(
+                onDismissRequest = { showSignOutDialog = false },
+                title = { Text("Sign Out") },
+                text = { Text("Are you sure you want to sign out of DoseCircle?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showSignOutDialog = false
+                            onSignOut()
+                        }
+                    ) {
+                        Text("Sign Out", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showSignOutDialog = false }
                     ) {
                         Text("Cancel")
                     }

@@ -1,5 +1,6 @@
 package com.nagi.dosecircle.data.repository
 
+import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.AuthCredential
@@ -51,6 +52,7 @@ class AuthRepository(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Log.e("AuthRepository", "Firebase signInWithCredential failed: [${(e as? FirebaseAuthException)?.errorCode ?: e::class.java.simpleName}] ${e.message}", e)
             Result.failure(Exception(getReadableErrorMessage(e), e))
         }
     }
@@ -69,6 +71,7 @@ class AuthRepository(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Log.e("AuthRepository", "Firebase signInWithCredential failed: [${(e as? FirebaseAuthException)?.errorCode ?: e::class.java.simpleName}] ${e.message}", e)
             Result.failure(Exception(getReadableErrorMessage(e), e))
         }
     }
@@ -86,6 +89,7 @@ class AuthRepository(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Log.e("AuthRepository", "Firebase signInWithCredential failed: [${(e as? FirebaseAuthException)?.errorCode ?: e::class.java.simpleName}] ${e.message}", e)
             Result.failure(Exception(getReadableErrorMessage(e), e))
         }
     }
@@ -98,6 +102,7 @@ class AuthRepository(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Log.e("AuthRepository", "Firebase signInWithCredential failed: [${(e as? FirebaseAuthException)?.errorCode ?: e::class.java.simpleName}] ${e.message}", e)
             Result.failure(Exception(getReadableErrorMessage(e), e))
         }
     }
@@ -124,6 +129,7 @@ class AuthRepository(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Log.e("AuthRepository", "Firebase signInWithCredential failed: [${(e as? FirebaseAuthException)?.errorCode ?: e::class.java.simpleName}] ${e.message}", e)
             Result.failure(Exception(getReadableErrorMessage(e), e))
         }
     }
