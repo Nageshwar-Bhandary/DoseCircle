@@ -11,10 +11,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.nagi.dosecircle.ui.screens.AddMedicationScreen
+import com.nagi.dosecircle.ui.screens.DashboardScreen
 import com.nagi.dosecircle.ui.screens.MedicationListScreen
 import com.nagi.dosecircle.ui.screens.SignInScreen
 import com.nagi.dosecircle.ui.theme.DoseCircleTheme
 import com.nagi.dosecircle.viewmodel.AddMedicationViewModel
+import com.nagi.dosecircle.viewmodel.DashboardViewModel
 import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 
 class MainActivity : ComponentActivity() {
@@ -27,11 +29,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             DoseCircleTheme {
                 val navController = rememberNavController()
-                val startDestination = if (app.authRepository.currentUser != null) {
-                    "medication_list"
-                } else {
-                    "sign_in"
-                }
+
+                val startDestination =
+                    if (app.authRepository.currentUser != null) {
+                        "medication_list"
+                    } else {
+                        "sign_in"
+                    }
 
                 NavHost(
                     navController = navController,
@@ -49,10 +53,12 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
+
                     composable("medication_list") {
                         val viewModel: MedicationListViewModel = viewModel(
                             factory = MedicationListViewModel.provideFactory(app)
                         )
+
                         MedicationListScreen(
                             viewModel = viewModel,
                             onNavigateToAddMedication = {
@@ -71,13 +77,31 @@ class MainActivity : ComponentActivity() {
                                         launchSingleTop = true
                                     }
                                 }
+                            },
+                            onNavigateToDashboard = {
+                                navController.navigate("dashboard")
                             }
                         )
                     }
+
+                    composable("dashboard") {
+                        val viewModel: DashboardViewModel = viewModel(
+                            factory = DashboardViewModel.provideFactory(app)
+                        )
+
+                        DashboardScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
                     composable("add_medication") {
                         val viewModel: AddMedicationViewModel = viewModel(
                             factory = AddMedicationViewModel.provideFactory(app)
                         )
+
                         AddMedicationScreen(
                             viewModel = viewModel,
                             onNavigateBack = {
@@ -85,17 +109,26 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
+
                     composable(
                         route = "edit_medication/{medicationId}",
                         arguments = listOf(
-                            navArgument("medicationId") { type = NavType.LongType }
+                            navArgument("medicationId") {
+                                type = NavType.LongType
+                            }
                         )
                     ) { backStackEntry ->
-                        val medicationId = backStackEntry.arguments?.getLong("medicationId")
+                        val medicationId =
+                            backStackEntry.arguments?.getLong("medicationId")
+
                         val viewModel: AddMedicationViewModel = viewModel(
                             key = "edit_medication_$medicationId",
-                            factory = AddMedicationViewModel.provideFactory(app, medicationId)
+                            factory = AddMedicationViewModel.provideFactory(
+                                app,
+                                medicationId
+                            )
                         )
+
                         AddMedicationScreen(
                             viewModel = viewModel,
                             onNavigateBack = {

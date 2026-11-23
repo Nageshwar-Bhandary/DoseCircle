@@ -42,7 +42,7 @@ class MedicationRepository(private val database: AppDatabase) {
             if (timesToInsert.isNotEmpty()) {
                 scheduleTimeDao.insertScheduleTimes(timesToInsert)
             }
-            medicationId
+            scheduleId
         }
     }
 
@@ -51,8 +51,8 @@ class MedicationRepository(private val database: AppDatabase) {
         schedule: Schedule,
         times: List<ScheduleTime>,
         oldPhotoUri: String? = null
-    ) {
-        database.withTransaction {
+    ): Long {
+        return database.withTransaction {
             if (oldPhotoUri != null && oldPhotoUri != medication.photoUri) {
                 com.nagi.dosecircle.util.ImageStorageHelper.deleteFile(oldPhotoUri)
             }
@@ -70,6 +70,7 @@ class MedicationRepository(private val database: AppDatabase) {
             if (timesToInsert.isNotEmpty()) {
                 scheduleTimeDao.insertScheduleTimes(timesToInsert)
             }
+            scheduleId
         }
     }
 
@@ -90,7 +91,23 @@ class MedicationRepository(private val database: AppDatabase) {
         return scheduleDao.getSchedulesForMedication(medicationId)
     }
 
+    suspend fun getScheduleById(id: Long): Schedule? {
+        return scheduleDao.getScheduleById(id)
+    }
+
+    suspend fun getAllActiveSchedules(): List<Schedule> {
+        return scheduleDao.getAllActiveSchedules()
+    }
+
     fun getTimesForSchedule(scheduleId: Long): Flow<List<ScheduleTime>> {
         return scheduleTimeDao.getTimesForSchedule(scheduleId)
+    }
+
+    suspend fun getTimesForScheduleDirect(scheduleId: Long): List<ScheduleTime> {
+        return scheduleTimeDao.getTimesForScheduleDirect(scheduleId)
+    }
+
+    suspend fun getScheduleTimeById(id: Long): ScheduleTime? {
+        return scheduleTimeDao.getScheduleTimeById(id)
     }
 }
