@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.nagi.dosecircle.DoseCircleApp
 import com.nagi.dosecircle.data.entity.Medication
+import com.nagi.dosecircle.data.repository.FirestoreSyncRepository
 import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,7 +21,8 @@ import kotlinx.coroutines.launch
 class MedicationListViewModel(
     private val currentPersonIdFlow: StateFlow<Long?>,
     private val medicationRepository: MedicationRepository,
-    private val alarmScheduler: AlarmScheduler? = null
+    private val alarmScheduler: AlarmScheduler? = null,
+    private val firestoreSyncRepository: FirestoreSyncRepository? = null
 ) : ViewModel() {
 
     val medications: StateFlow<List<Medication>> = currentPersonIdFlow
@@ -41,6 +43,8 @@ class MedicationListViewModel(
                 alarmScheduler?.cancelForSchedule(schedule.id)
             }
             medicationRepository.deleteMedication(medication)
+            // Fire-and-forget Firestore delete; silently skipped if offline or logged out
+            firestoreSyncRepository?.deleteMedication(medication.cloudId)
         }
     }
 
@@ -53,7 +57,8 @@ class MedicationListViewModel(
                         return MedicationListViewModel(
                             currentPersonIdFlow = app.sessionManager.currentPersonId,
                             medicationRepository = app.medicationRepository,
-                            alarmScheduler = app.alarmScheduler
+                            alarmScheduler = app.alarmScheduler,
+                            firestoreSyncRepository = app.firestoreSyncRepository
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

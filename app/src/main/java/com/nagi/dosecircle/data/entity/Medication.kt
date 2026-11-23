@@ -28,5 +28,6 @@ data class Medication(
     val instructions: String,
     val photoUri: String? = null,
     val stockCount: Int = 0,
-    val lowStockThreshold: Int = 0
+    val lowStockThreshold: Int = 0,
+    val cloudId: String? = null
 )

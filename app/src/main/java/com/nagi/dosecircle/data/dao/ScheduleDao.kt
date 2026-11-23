@@ -29,6 +29,9 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedules WHERE isActive = 1")
     suspend fun getAllActiveSchedules(): List<Schedule>
 
+    @Query("SELECT * FROM schedules WHERE medicationId = :medicationId")
+    suspend fun getSchedulesDirect(medicationId: Long): List<Schedule>
+
     @Query("SELECT * FROM schedules WHERE personId = :personId AND isActive = 1")
     fun getAllActiveSchedulesForPerson(personId: Long): Flow<List<Schedule>>
 }

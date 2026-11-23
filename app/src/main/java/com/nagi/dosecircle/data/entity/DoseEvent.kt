@@ -33,5 +33,6 @@ data class DoseEvent(
     val medicationId: Long,
     val scheduledTime: Long, // epoch millis
     val status: DoseStatus,
-    val actionTime: Long? = null
+    val actionTime: Long? = null,
+    val cloudId: String? = null
 )

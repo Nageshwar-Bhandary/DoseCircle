@@ -24,7 +24,7 @@ import com.nagi.dosecircle.data.entity.ScheduleTime
         ScheduleTime::class,
         DoseEvent::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
