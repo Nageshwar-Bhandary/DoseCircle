@@ -69,6 +69,7 @@ class AddMedicationViewModel(
 
     private var initialPhotoUri: String? = null
     private var existingSchedule: Schedule? = null
+    private var existingCloudId: String? = null
 
     init {
         if (medicationId != null) {
@@ -80,6 +81,7 @@ class AddMedicationViewModel(
         viewModelScope.launch {
             val med = medicationRepository.getMedicationById(medId) ?: return@launch
             initialPhotoUri = med.photoUri
+            existingCloudId = med.cloudId
             val schedules = medicationRepository.getSchedulesForMedication(medId).firstOrNull() ?: emptyList()
             val primarySchedule = schedules.firstOrNull()
             existingSchedule = primarySchedule
@@ -241,7 +243,8 @@ class AddMedicationViewModel(
                     instructions = state.instructions.trim(),
                     photoUri = state.photoUri,
                     stockCount = state.stockCount.toIntOrNull() ?: 0,
-                    lowStockThreshold = state.lowStockThreshold.toIntOrNull() ?: 0
+                    lowStockThreshold = state.lowStockThreshold.toIntOrNull() ?: 0,
+                    cloudId = existingCloudId
                 )
 
                 val sched = existingSchedule?.copy(
