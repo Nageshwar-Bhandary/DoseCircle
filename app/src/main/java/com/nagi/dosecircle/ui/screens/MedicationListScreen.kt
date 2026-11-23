@@ -50,6 +50,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import androidx.compose.ui.res.painterResource
+import com.nagi.dosecircle.R
 import com.nagi.dosecircle.data.entity.Medication
 import com.nagi.dosecircle.util.RequestNotificationPermissionEffect
 import com.nagi.dosecircle.viewmodel.MedicationListViewModel
@@ -63,6 +65,7 @@ fun MedicationListScreen(
     onNavigateToEditMedication: (Long) -> Unit,
     onSignOut: () -> Unit = {},
     onNavigateToDashboard: () -> Unit,
+    onNavigateToHistory: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     RequestNotificationPermissionEffect()
@@ -80,6 +83,13 @@ fun MedicationListScreen(
                         Icon(
                             imageVector = Icons.Default.DateRange,
                             contentDescription = "Today's Dashboard"
+                        )
+                    }
+
+                    IconButton(onClick = onNavigateToHistory) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_history),
+                            contentDescription = "Medication History"
                         )
                     }
 
