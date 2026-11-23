@@ -12,11 +12,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.nagi.dosecircle.ui.screens.AddMedicationScreen
 import com.nagi.dosecircle.ui.screens.DashboardScreen
+import com.nagi.dosecircle.ui.screens.HistoryScreen
 import com.nagi.dosecircle.ui.screens.MedicationListScreen
 import com.nagi.dosecircle.ui.screens.SignInScreen
 import com.nagi.dosecircle.ui.theme.DoseCircleTheme
 import com.nagi.dosecircle.viewmodel.AddMedicationViewModel
 import com.nagi.dosecircle.viewmodel.DashboardViewModel
+import com.nagi.dosecircle.viewmodel.HistoryViewModel
 import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 
 class MainActivity : ComponentActivity() {
@@ -80,6 +82,9 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToDashboard = {
                                 navController.navigate("dashboard")
+                            },
+                            onNavigateToHistory = {
+                                navController.navigate("history")
                             }
                         )
                     }
@@ -90,6 +95,19 @@ class MainActivity : ComponentActivity() {
                         )
 
                         DashboardScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable("history") {
+                        val viewModel: HistoryViewModel = viewModel(
+                            factory = HistoryViewModel.provideFactory(app)
+                        )
+
+                        HistoryScreen(
                             viewModel = viewModel,
                             onNavigateBack = {
                                 navController.popBackStack()
