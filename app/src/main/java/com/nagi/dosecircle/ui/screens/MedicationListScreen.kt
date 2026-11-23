@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
@@ -59,6 +60,7 @@ fun MedicationListScreen(
     viewModel: MedicationListViewModel,
     onNavigateToAddMedication: () -> Unit,
     onNavigateToEditMedication: (Long) -> Unit,
+    onNavigateToDashboard: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     RequestNotificationPermissionEffect()
@@ -70,6 +72,14 @@ fun MedicationListScreen(
         topBar = {
             TopAppBar(
                 title = { Text("My Medicines") },
+                actions = {
+                    IconButton(onClick = onNavigateToDashboard) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Today's Dashboard"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer

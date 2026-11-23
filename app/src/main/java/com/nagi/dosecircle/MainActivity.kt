@@ -11,9 +11,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.nagi.dosecircle.ui.screens.AddMedicationScreen
+import com.nagi.dosecircle.ui.screens.DashboardScreen
 import com.nagi.dosecircle.ui.screens.MedicationListScreen
 import com.nagi.dosecircle.ui.theme.DoseCircleTheme
 import com.nagi.dosecircle.viewmodel.AddMedicationViewModel
+import com.nagi.dosecircle.viewmodel.DashboardViewModel
 import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 
 class MainActivity : ComponentActivity() {
@@ -41,6 +43,20 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToEditMedication = { medicationId ->
                                 navController.navigate("edit_medication/$medicationId")
+                            },
+                            onNavigateToDashboard = {
+                                navController.navigate("dashboard")
+                            }
+                        )
+                    }
+                    composable("dashboard") {
+                        val viewModel: DashboardViewModel = viewModel(
+                            factory = DashboardViewModel.provideFactory(app)
+                        )
+                        DashboardScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = {
+                                navController.popBackStack()
                             }
                         )
                     }
