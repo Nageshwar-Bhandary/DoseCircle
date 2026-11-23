@@ -5,12 +5,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.nagi.dosecircle.DoseCircleApp
 import com.nagi.dosecircle.data.entity.Medication
-import com.nagi.dosecircle.data.entity.Person
 import com.nagi.dosecircle.data.repository.MedicationRepository
-import com.nagi.dosecircle.data.repository.PersonRepository
 import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -21,30 +18,21 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MedicationListViewModel(
-    private val personRepository: PersonRepository,
+    private val currentPersonIdFlow: StateFlow<Long?>,
     private val medicationRepository: MedicationRepository,
     private val alarmScheduler: AlarmScheduler? = null
 ) : ViewModel() {
 
-    private val _currentPerson = MutableStateFlow<Person?>(null)
-
-    val medications: StateFlow<List<Medication>> = _currentPerson
+    val medications: StateFlow<List<Medication>> = currentPersonIdFlow
         .filterNotNull()
-        .flatMapLatest { person ->
-            medicationRepository.getMedicationsForPerson(person.id)
+        .flatMapLatest { personId ->
+            medicationRepository.getMedicationsForPerson(personId)
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-
-    init {
-        viewModelScope.launch {
-            val defaultPerson = personRepository.ensureDefaultPerson()
-            _currentPerson.value = defaultPerson
-        }
-    }
 
     fun deleteMedication(medication: Medication) {
         viewModelScope.launch {
@@ -63,7 +51,7 @@ class MedicationListViewModel(
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     if (modelClass.isAssignableFrom(MedicationListViewModel::class.java)) {
                         return MedicationListViewModel(
-                            personRepository = app.personRepository,
+                            currentPersonIdFlow = app.sessionManager.currentPersonId,
                             medicationRepository = app.medicationRepository,
                             alarmScheduler = app.alarmScheduler
                         ) as T

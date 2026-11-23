@@ -120,6 +120,29 @@ class AlarmScheduler(
         }
     }
 
+    suspend fun cancelAlarmsForPerson(personId: Long) {
+        val activeSchedules = medicationRepository.getAllActiveSchedules().filter { it.personId == personId }
+        for (schedule in activeSchedules) {
+            cancelForSchedule(schedule.id)
+        }
+        Log.d(TAG, "cancelAlarmsForPerson completed for personId=$personId across ${activeSchedules.size} schedules")
+    }
+
+    suspend fun scheduleAlarmsForPerson(personId: Long): Int {
+        if (!PermissionHelper.canScheduleExactAlarms(context)) {
+            Log.w(TAG, "Exact alarms permission not granted. Skipping scheduleAlarmsForPerson: $personId")
+            return 0
+        }
+
+        val activeSchedules = medicationRepository.getAllActiveSchedules().filter { it.personId == personId }
+        var totalScheduled = 0
+        for (schedule in activeSchedules) {
+            totalScheduled += scheduleForSchedule(schedule.id)
+        }
+        Log.d(TAG, "scheduleAlarmsForPerson completed for personId=$personId. Scheduled $totalScheduled alarms across ${activeSchedules.size} schedules")
+        return totalScheduled
+    }
+
     suspend fun rescheduleAll(): Int {
         if (!PermissionHelper.canScheduleExactAlarms(context)) {
             Log.w(TAG, "Exact alarms permission not granted. Skipping rescheduleAll.")

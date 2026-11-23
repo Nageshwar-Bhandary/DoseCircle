@@ -8,7 +8,6 @@ import com.nagi.dosecircle.data.entity.Medication
 import com.nagi.dosecircle.data.entity.Schedule
 import com.nagi.dosecircle.data.entity.ScheduleTime
 import com.nagi.dosecircle.data.repository.MedicationRepository
-import com.nagi.dosecircle.data.repository.PersonRepository
 import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
 import com.nagi.dosecircle.util.ImageStorageHelper
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -49,7 +48,7 @@ data class AddMedicationUiState(
 )
 
 class AddMedicationViewModel(
-    private val personRepository: PersonRepository,
+    private val currentPersonIdFlow: StateFlow<Long?>,
     private val medicationRepository: MedicationRepository,
     private val alarmScheduler: AlarmScheduler? = null,
     private val medicationId: Long? = null
@@ -222,8 +221,8 @@ class AddMedicationViewModel(
         }
 
         viewModelScope.launch {
+            val personId = currentPersonIdFlow.value ?: return@launch
             _uiState.update { it.copy(isSaving = true) }
-            val defaultPerson = personRepository.ensureDefaultPerson()
             val startOfDayMillis = LocalDate.now()
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant()
@@ -234,7 +233,7 @@ class AddMedicationViewModel(
             val savedScheduleId = if (state.isEditMode && medicationId != null) {
                 val med = Medication(
                     id = medicationId,
-                    personId = defaultPerson.id,
+                    personId = personId,
                     name = trimmedName,
                     dosage = state.dosage.trim(),
                     instructions = state.instructions.trim(),
@@ -244,9 +243,10 @@ class AddMedicationViewModel(
                 )
 
                 val sched = existingSchedule?.copy(
+                    personId = personId,
                     daysOfWeek = sortedDaysString
                 ) ?: Schedule(
-                    personId = defaultPerson.id,
+                    personId = personId,
                     medicationId = medicationId,
                     startDate = startOfDayMillis,
                     endDate = null,
@@ -274,7 +274,7 @@ class AddMedicationViewModel(
                 )
             } else {
                 val medication = Medication(
-                    personId = defaultPerson.id,
+                    personId = personId,
                     name = trimmedName,
                     dosage = state.dosage.trim(),
                     instructions = state.instructions.trim(),
@@ -284,7 +284,7 @@ class AddMedicationViewModel(
                 )
 
                 val schedule = Schedule(
-                    personId = defaultPerson.id,
+                    personId = personId,
                     medicationId = 0,
                     startDate = startOfDayMillis,
                     endDate = null,
@@ -332,7 +332,7 @@ class AddMedicationViewModel(
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     if (modelClass.isAssignableFrom(AddMedicationViewModel::class.java)) {
                         return AddMedicationViewModel(
-                            personRepository = app.personRepository,
+                            currentPersonIdFlow = app.sessionManager.currentPersonId,
                             medicationRepository = app.medicationRepository,
                             alarmScheduler = app.alarmScheduler,
                             medicationId = medicationId

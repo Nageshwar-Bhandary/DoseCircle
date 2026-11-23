@@ -57,23 +57,21 @@ data class DashboardUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModel(
     private val context: Context,
-    private val personRepository: PersonRepository,
+    private val currentPersonIdFlow: StateFlow<Long?>,
     private val medicationRepository: MedicationRepository,
     private val doseEventRepository: DoseEventRepository
 ) : ViewModel() {
 
-    private val _currentPerson = MutableStateFlow<Person?>(null)
-
-    val uiState: StateFlow<DashboardUiState> = _currentPerson
+    val uiState: StateFlow<DashboardUiState> = currentPersonIdFlow
         .filterNotNull()
-        .flatMapLatest { person ->
+        .flatMapLatest { personId ->
             val zoneId = ZoneId.systemDefault()
             val today = LocalDate.now(zoneId)
             val startOfDay = today.atStartOfDay(zoneId).toInstant().toEpochMilli()
             val endOfDay = today.atTime(LocalTime.MAX).atZone(zoneId).toInstant().toEpochMilli()
 
-            val doseEventsFlow = doseEventRepository.getDoseEventsForPersonBetween(person.id, startOfDay, endOfDay)
-            val medicationsFlow = medicationRepository.getMedicationsForPerson(person.id)
+            val doseEventsFlow = doseEventRepository.getDoseEventsForPersonBetween(personId, startOfDay, endOfDay)
+            val medicationsFlow = medicationRepository.getMedicationsForPerson(personId)
 
             combine(doseEventsFlow, medicationsFlow) { doseEvents, medications ->
                 val medMap = medications.associateBy { it.id }
@@ -104,7 +102,7 @@ class DashboardViewModel(
                 }
 
                 // Upcoming remaining ScheduleTimes today
-                val upcoming = computeUpcomingDoses(person.id, medMap, doseEvents, today, zoneId)
+                val upcoming = computeUpcomingDoses(personId, medMap, doseEvents, today, zoneId)
 
                 DashboardUiState(
                     todayDoses = todayDoses,
@@ -121,13 +119,6 @@ class DashboardViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = DashboardUiState()
         )
-
-    init {
-        viewModelScope.launch {
-            val defaultPerson = personRepository.ensureDefaultPerson()
-            _currentPerson.value = defaultPerson
-        }
-    }
 
     private suspend fun computeUpcomingDoses(
         personId: Long,
@@ -226,7 +217,7 @@ class DashboardViewModel(
                     if (modelClass.isAssignableFrom(DashboardViewModel::class.java)) {
                         return DashboardViewModel(
                             context = app,
-                            personRepository = app.personRepository,
+                            currentPersonIdFlow = app.sessionManager.currentPersonId,
                             medicationRepository = app.medicationRepository,
                             doseEventRepository = app.doseEventRepository
                         ) as T
