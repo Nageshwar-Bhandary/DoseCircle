@@ -7,6 +7,7 @@ import com.nagi.dosecircle.DoseCircleApp
 import com.nagi.dosecircle.data.entity.Medication
 import com.nagi.dosecircle.data.entity.Schedule
 import com.nagi.dosecircle.data.entity.ScheduleTime
+import com.nagi.dosecircle.data.repository.FirestoreSyncRepository
 import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
 import com.nagi.dosecircle.util.ImageStorageHelper
@@ -51,7 +52,8 @@ class AddMedicationViewModel(
     private val currentPersonIdFlow: StateFlow<Long?>,
     private val medicationRepository: MedicationRepository,
     private val alarmScheduler: AlarmScheduler? = null,
-    private val medicationId: Long? = null
+    private val medicationId: Long? = null,
+    private val firestoreSyncRepository: FirestoreSyncRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -309,6 +311,15 @@ class AddMedicationViewModel(
 
             if (savedScheduleId > 0) {
                 alarmScheduler?.scheduleForSchedule(savedScheduleId)
+                // Fire-and-forget Firestore upload; runs on its own app-level scope
+                val savedMedicationId = if (state.isEditMode && medicationId != null) {
+                    medicationId
+                } else {
+                    medicationRepository.getScheduleById(savedScheduleId)?.medicationId
+                }
+                if (savedMedicationId != null) {
+                    firestoreSyncRepository?.uploadMedication(savedMedicationId)
+                }
             }
 
             _uiState.update { it.copy(isSaving = false) }
@@ -335,7 +346,8 @@ class AddMedicationViewModel(
                             currentPersonIdFlow = app.sessionManager.currentPersonId,
                             medicationRepository = app.medicationRepository,
                             alarmScheduler = app.alarmScheduler,
-                            medicationId = medicationId
+                            medicationId = medicationId,
+                            firestoreSyncRepository = app.firestoreSyncRepository
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
