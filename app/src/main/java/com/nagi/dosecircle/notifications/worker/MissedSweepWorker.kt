@@ -33,6 +33,7 @@ class MissedSweepWorker(
             val nowMillis = System.currentTimeMillis()
             for (dose in pendingDoses) {
                 app.doseEventRepository.updateDoseStatus(dose.id, DoseStatus.MISSED, nowMillis)
+                app.doseEventSyncRepository.uploadDoseEvent(dose.id)
                 notificationManager.cancel(dose.id.toInt())
                 Log.d(TAG, "Sweep marked DoseEvent ${dose.id} as MISSED")
             }

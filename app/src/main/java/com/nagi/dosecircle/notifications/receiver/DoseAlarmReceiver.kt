@@ -71,6 +71,7 @@ class DoseAlarmReceiver : BroadcastReceiver() {
                     actionTime = null
                 )
                 val doseEventId = app.doseEventRepository.insertDoseEvent(doseEvent)
+                app.doseEventSyncRepository.uploadDoseEvent(doseEventId)
 
                 // Enqueue MissedDoseWorker with initial delay of MISSED_GRACE_MINUTES
                 val missedWorkRequest = OneTimeWorkRequestBuilder<MissedDoseWorker>()
