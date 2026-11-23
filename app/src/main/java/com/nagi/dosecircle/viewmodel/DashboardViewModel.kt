@@ -13,6 +13,7 @@ import com.nagi.dosecircle.data.entity.Person
 import com.nagi.dosecircle.data.entity.Schedule
 import com.nagi.dosecircle.data.entity.ScheduleTime
 import com.nagi.dosecircle.data.repository.DoseEventRepository
+import com.nagi.dosecircle.data.repository.DoseEventSyncRepository
 import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,7 +60,8 @@ class DashboardViewModel(
     private val context: Context,
     private val currentPersonIdFlow: StateFlow<Long?>,
     private val medicationRepository: MedicationRepository,
-    private val doseEventRepository: DoseEventRepository
+    private val doseEventRepository: DoseEventRepository,
+    private val doseEventSyncRepository: DoseEventSyncRepository? = null
 ) : ViewModel() {
 
     val uiState: StateFlow<DashboardUiState> = currentPersonIdFlow
@@ -183,6 +185,7 @@ class DashboardViewModel(
             if (event != null && event.status == DoseStatus.PENDING) {
                 val nowMillis = System.currentTimeMillis()
                 doseEventRepository.updateDoseStatus(doseEventId, DoseStatus.TAKEN, nowMillis)
+                doseEventSyncRepository?.uploadDoseEvent(doseEventId)
                 cancelNotification(doseEventId)
             }
         }
@@ -194,6 +197,7 @@ class DashboardViewModel(
             if (event != null && event.status == DoseStatus.PENDING) {
                 val nowMillis = System.currentTimeMillis()
                 doseEventRepository.updateDoseStatus(doseEventId, DoseStatus.SKIPPED, nowMillis)
+                doseEventSyncRepository?.uploadDoseEvent(doseEventId)
                 cancelNotification(doseEventId)
             }
         }
@@ -219,7 +223,8 @@ class DashboardViewModel(
                             context = app,
                             currentPersonIdFlow = app.sessionManager.currentPersonId,
                             medicationRepository = app.medicationRepository,
-                            doseEventRepository = app.doseEventRepository
+                            doseEventRepository = app.doseEventRepository,
+                            doseEventSyncRepository = app.doseEventSyncRepository
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

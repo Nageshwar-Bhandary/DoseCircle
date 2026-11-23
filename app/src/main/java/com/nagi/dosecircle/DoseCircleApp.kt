@@ -7,6 +7,7 @@ import androidx.work.WorkManager
 import com.nagi.dosecircle.data.database.AppDatabase
 import com.nagi.dosecircle.data.repository.AuthRepository
 import com.nagi.dosecircle.data.repository.DoseEventRepository
+import com.nagi.dosecircle.data.repository.DoseEventSyncRepository
 import com.nagi.dosecircle.data.repository.FirestoreSyncRepository
 import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
@@ -60,6 +61,10 @@ class DoseCircleApp : Application() {
 
     val doseEventRepository: DoseEventRepository by lazy {
         DoseEventRepository(database.doseEventDao())
+    }
+
+    val doseEventSyncRepository: DoseEventSyncRepository by lazy {
+        DoseEventSyncRepository(database)
     }
 
     val alarmScheduler: AlarmScheduler by lazy {

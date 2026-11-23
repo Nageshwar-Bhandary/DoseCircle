@@ -16,6 +16,9 @@ interface DoseEventDao {
     @Query("UPDATE dose_events SET status = :status, actionTime = :actionTime WHERE id = :id")
     suspend fun updateDoseStatus(id: Long, status: DoseStatus, actionTime: Long?)
 
+    @Query("UPDATE dose_events SET cloudId = :cloudId WHERE id = :id")
+    suspend fun updateCloudId(id: Long, cloudId: String)
+
     @Query("SELECT * FROM dose_events WHERE personId = :personId AND scheduledTime BETWEEN :startTime AND :endTime ORDER BY scheduledTime ASC")
     fun getDoseEventsForPersonBetween(personId: Long, startTime: Long, endTime: Long): Flow<List<DoseEvent>>
 

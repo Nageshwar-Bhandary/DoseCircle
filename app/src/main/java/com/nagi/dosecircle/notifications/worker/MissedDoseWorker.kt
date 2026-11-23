@@ -31,6 +31,7 @@ class MissedDoseWorker(
             if (doseEvent != null && doseEvent.status == DoseStatus.PENDING) {
                 val nowMillis = System.currentTimeMillis()
                 app.doseEventRepository.updateDoseStatus(doseEventId, DoseStatus.MISSED, nowMillis)
+                app.doseEventSyncRepository.uploadDoseEvent(doseEventId)
                 Log.d(TAG, "DoseEvent $doseEventId marked as MISSED at $nowMillis")
 
                 val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

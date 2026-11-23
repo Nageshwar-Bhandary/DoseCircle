@@ -15,6 +15,10 @@ class DoseEventRepository(private val doseEventDao: DoseEventDao) {
         doseEventDao.updateDoseStatus(id, status, actionTime)
     }
 
+    suspend fun updateCloudId(id: Long, cloudId: String) {
+        doseEventDao.updateCloudId(id, cloudId)
+    }
+
     fun getDoseEventsForPersonBetween(personId: Long, startTime: Long, endTime: Long): Flow<List<DoseEvent>> {
         return doseEventDao.getDoseEventsForPersonBetween(personId, startTime, endTime)
     }

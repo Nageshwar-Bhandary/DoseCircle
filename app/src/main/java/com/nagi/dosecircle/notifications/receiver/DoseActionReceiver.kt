@@ -42,6 +42,7 @@ class DoseActionReceiver : BroadcastReceiver() {
                     }
                     val nowMillis = System.currentTimeMillis()
                     app.doseEventRepository.updateDoseStatus(doseEventId, newStatus, nowMillis)
+                    app.doseEventSyncRepository.uploadDoseEvent(doseEventId)
                     Log.d(TAG, "DoseEvent $doseEventId updated to $newStatus at $nowMillis")
                 } else {
                     Log.d(TAG, "DoseEvent $doseEventId is not PENDING (current=${doseEvent?.status}), ignoring action $action")
