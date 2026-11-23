@@ -18,7 +18,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
@@ -49,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.nagi.dosecircle.data.entity.Medication
+import com.nagi.dosecircle.util.RequestNotificationPermissionEffect
 import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 import java.io.File
 
@@ -58,15 +61,35 @@ fun MedicationListScreen(
     viewModel: MedicationListViewModel,
     onNavigateToAddMedication: () -> Unit,
     onNavigateToEditMedication: (Long) -> Unit,
+    onSignOut: () -> Unit = {},
+    onNavigateToDashboard: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    RequestNotificationPermissionEffect()
+
     val medications by viewModel.medications.collectAsState()
     var medicationToDelete by remember { mutableStateOf<Medication?>(null) }
+    var showSignOutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("My Medicines") },
+                actions = {
+                    IconButton(onClick = onNavigateToDashboard) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Today's Dashboard"
+                        )
+                    }
+
+                    IconButton(onClick = { showSignOutDialog = true }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Sign Out"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -145,6 +168,31 @@ fun MedicationListScreen(
                 }
             )
         }
+
+        if (showSignOutDialog) {
+            AlertDialog(
+                onDismissRequest = { showSignOutDialog = false },
+                title = { Text("Sign Out") },
+                text = { Text("Are you sure you want to sign out of DoseCircle?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showSignOutDialog = false
+                            onSignOut()
+                        }
+                    ) {
+                        Text("Sign Out", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showSignOutDialog = false }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -166,8 +214,8 @@ fun MedicationItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Thumbnail / Icon
             val photoFile = medication.photoUri?.let { File(it) }
+
             if (photoFile != null && photoFile.exists()) {
                 Image(
                     painter = rememberAsyncImagePainter(photoFile),
@@ -202,17 +250,24 @@ fun MedicationItemCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
+
                 Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
                     text = "Dosage: ${medication.dosage}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
                 Spacer(modifier = Modifier.height(2.dp))
+
                 Text(
                     text = "Stock: ${medication.stockCount}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (medication.stockCount <= medication.lowStockThreshold && medication.stockCount > 0) {
+                    color = if (
+                        medication.stockCount <= medication.lowStockThreshold &&
+                        medication.stockCount > 0
+                    ) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant

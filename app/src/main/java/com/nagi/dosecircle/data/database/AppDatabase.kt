@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.nagi.dosecircle.data.dao.DoseEventDao
 import com.nagi.dosecircle.data.dao.MedicationDao
 import com.nagi.dosecircle.data.dao.PersonDao
 import com.nagi.dosecircle.data.dao.ScheduleDao
@@ -33,6 +34,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun medicationDao(): MedicationDao
     abstract fun scheduleDao(): ScheduleDao
     abstract fun scheduleTimeDao(): ScheduleTimeDao
+    abstract fun doseEventDao(): DoseEventDao
 
     companion object {
         @Volatile

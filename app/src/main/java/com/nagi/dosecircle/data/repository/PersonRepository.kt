@@ -19,4 +19,41 @@ class PersonRepository(private val personDao: PersonDao) {
         val generatedId = personDao.insertPerson(defaultPerson)
         return defaultPerson.copy(id = generatedId)
     }
+
+    suspend fun getOrCreatePersonForUser(
+        uid: String,
+        email: String?,
+        displayName: String?
+    ): Person {
+        val existing = personDao.getByCloudUid(uid)
+        if (existing != null) {
+            return existing
+        }
+
+        val nameToUse = when {
+            !displayName.isNullOrBlank() -> displayName
+            !email.isNullOrBlank() -> email.substringBefore('@')
+            else -> "User"
+        }
+
+        val unlinkedPerson = personDao.getDefaultPersonWithNullCloudUid()
+        if (unlinkedPerson != null) {
+            val updated = unlinkedPerson.copy(
+                cloudUid = uid,
+                email = email,
+                name = if (unlinkedPerson.name == "Me" && !displayName.isNullOrBlank()) displayName else unlinkedPerson.name
+            )
+            personDao.updatePerson(updated)
+            return updated
+        }
+
+        val newPerson = Person(
+            name = nameToUse,
+            isDefault = true,
+            cloudUid = uid,
+            email = email
+        )
+        val generatedId = personDao.insertPerson(newPerson)
+        return newPerson.copy(id = generatedId)
+    }
 }

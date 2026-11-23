@@ -21,4 +21,10 @@ interface PersonDao {
 
     @Query("SELECT * FROM persons WHERE isDefault = 1 LIMIT 1")
     suspend fun getDefaultPerson(): Person?
+
+    @Query("SELECT * FROM persons WHERE cloudUid = :uid LIMIT 1")
+    suspend fun getByCloudUid(uid: String): Person?
+
+    @Query("SELECT * FROM persons WHERE cloudUid IS NULL LIMIT 1")
+    suspend fun getDefaultPersonWithNullCloudUid(): Person?
 }
