@@ -186,33 +186,20 @@ class DashboardViewModel(
         viewModelScope.launch {
             val event = doseEventRepository.getDoseEventById(doseEventId)
             if (event != null && event.status == DoseStatus.PENDING) {
-                val medId = event.medicationId
-                val currentMed = medicationRepository.getMedicationById(medId)
-
-                // Safety: If medication is out of stock (stockCount <= 0), do not mark TAKEN or deduct stock
-                if (currentMed == null || currentMed.stockCount <= 0) {
-                    cancelNotification(doseEventId)
-                    return@launch
-                }
-
                 val nowMillis = System.currentTimeMillis()
                 doseEventRepository.updateDoseStatus(doseEventId, DoseStatus.TAKEN, nowMillis)
                 doseEventSyncRepository?.uploadDoseEvent(doseEventId)
                 cancelNotification(doseEventId)
 
                 // Deduct stock
-                val stockBefore = currentMed.stockCount
+                val medId = event.medicationId
+                val stockBefore = medicationRepository.getMedicationById(medId)?.stockCount ?: 0
                 medicationRepository.decreaseStock(medId)
                 val medAfter = medicationRepository.getMedicationById(medId)
                 if (medAfter != null) {
                     val app = context.applicationContext as? com.nagi.dosecircle.DoseCircleApp
                     // Sync updated stock to Firestore
                     app?.firestoreSyncRepository?.uploadMedication(medId)
-
-                    // If stock reached 0, cancel all scheduled alarms for this medication
-                    if (medAfter.stockCount == 0) {
-                        app?.alarmScheduler?.cancelAlarmsForMedication(medId)
-                    }
 
                     // Notify only on threshold crossing or reaching zero
                     val threshold = medAfter.lowStockThreshold

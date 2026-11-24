@@ -38,13 +38,6 @@ class AlarmScheduler(
             return 0
         }
 
-        val medication = medicationRepository.getMedicationById(schedule.medicationId)
-        if (medication == null || medication.stockCount <= 0) {
-            cancelForSchedule(scheduleId)
-            Log.d(TAG, "Medication is null or out of stock (stock=${medication?.stockCount}). Canceled alarms for schedule: $scheduleId")
-            return 0
-        }
-
         val times = medicationRepository.getTimesForScheduleDirect(scheduleId)
         val selectedDays = schedule.daysOfWeek
             .split(",")
@@ -87,13 +80,6 @@ class AlarmScheduler(
         val schedule = medicationRepository.getScheduleById(scheduleTime.scheduleId) ?: return null
         if (!schedule.isActive) {
             cancelAlarmForScheduleTime(scheduleTimeId)
-            return null
-        }
-
-        val medication = medicationRepository.getMedicationById(schedule.medicationId)
-        if (medication == null || medication.stockCount <= 0) {
-            cancelAlarmForScheduleTime(scheduleTimeId)
-            Log.d(TAG, "Medication is null or out of stock (stock=${medication?.stockCount}). Canceled alarm for scheduleTimeId: $scheduleTimeId")
             return null
         }
 
@@ -144,11 +130,6 @@ class AlarmScheduler(
     }
 
     suspend fun scheduleAlarmsForMedication(medicationId: Long): Int {
-        val medication = medicationRepository.getMedicationById(medicationId)
-        if (medication == null || medication.stockCount <= 0) {
-            cancelAlarmsForMedication(medicationId)
-            return 0
-        }
         val schedules = medicationRepository.getSchedulesForMedication(medicationId).firstOrNull() ?: emptyList()
         var scheduledCount = 0
         for (schedule in schedules) {

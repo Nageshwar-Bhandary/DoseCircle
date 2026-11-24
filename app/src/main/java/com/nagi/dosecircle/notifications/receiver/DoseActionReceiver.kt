@@ -36,19 +36,6 @@ class DoseActionReceiver : BroadcastReceiver() {
             try {
                 val doseEvent = app.doseEventRepository.getDoseEventById(doseEventId)
                 if (doseEvent != null && doseEvent.status == DoseStatus.PENDING) {
-                    val medId = doseEvent.medicationId
-                    val currentMed = app.medicationRepository.getMedicationById(medId)
-
-                    // Safety: If action is TAKEN but medication is out of stock (stockCount <= 0),
-                    // do not mark TAKEN and do not deduct stock.
-                    if (action == Constants.ACTION_TAKEN && (currentMed == null || currentMed.stockCount <= 0)) {
-                        Log.w(TAG, "Cannot take dose for medId=$medId because stock is 0 or null. Ignoring Taken action.")
-                        // Cancel the notification so user is not stuck
-                        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                        notificationManager.cancel(doseEventId.toInt())
-                        return@launch
-                    }
-
                     val newStatus = if (action == Constants.ACTION_TAKEN) {
                         DoseStatus.TAKEN
                     } else {
@@ -61,16 +48,12 @@ class DoseActionReceiver : BroadcastReceiver() {
 
                     // Deduct stock only when TAKEN
                     if (newStatus == DoseStatus.TAKEN) {
-                        val stockBefore = currentMed?.stockCount ?: 0
+                        val medId = doseEvent.medicationId
+                        val stockBefore = app.medicationRepository.getMedicationById(medId)?.stockCount ?: 0
                         app.medicationRepository.decreaseStock(medId)
                         val medAfter = app.medicationRepository.getMedicationById(medId)
                         if (medAfter != null) {
                             app.firestoreSyncRepository.uploadMedication(medId)
-
-                            // If stock reached 0, cancel all scheduled alarms for this medication
-                            if (medAfter.stockCount == 0) {
-                                app.alarmScheduler.cancelAlarmsForMedication(medId)
-                            }
 
                             val threshold = medAfter.lowStockThreshold
                             if (threshold > 0 &&

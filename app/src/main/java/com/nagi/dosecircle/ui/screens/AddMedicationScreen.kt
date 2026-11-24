@@ -237,8 +237,6 @@ fun AddMedicationScreen(
                     value = state.stockCount,
                     onValueChange = { viewModel.onStockCountChange(it) },
                     label = { Text("Current Stock") },
-                    isError = state.stockError != null,
-                    supportingText = state.stockError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.weight(1f)

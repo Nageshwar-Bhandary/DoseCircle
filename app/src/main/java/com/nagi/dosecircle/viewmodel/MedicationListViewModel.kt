@@ -51,14 +51,8 @@ class MedicationListViewModel(
     fun refillMedication(medication: Medication, quantity: Int) {
         if (quantity <= 0) return
         viewModelScope.launch {
-            val wasOutOfStock = medication.stockCount == 0
             medicationRepository.increaseStock(medication.id, quantity)
             firestoreSyncRepository?.uploadMedication(medication.id)
-
-            // When stock is refilled above 0 from 0, reschedule alarms through normal flow without duplicates
-            if (wasOutOfStock) {
-                alarmScheduler?.scheduleAlarmsForMedication(medication.id)
-            }
         }
     }
 

@@ -410,15 +410,6 @@ fun MedicationItemCard(
                         MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
-
-                if (isOutOfStock) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "This medicine is out of stock. Refill it to resume reminders.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
             }
 
             TextButton(onClick = onRefillClick) {
