@@ -45,6 +45,7 @@ data class AddMedicationUiState(
     val nameError: String? = null,
     val daysError: String? = null,
     val timesError: String? = null,
+    val stockError: String? = null,
     val isSaving: Boolean = false
 )
 
@@ -150,7 +151,7 @@ class AddMedicationViewModel(
 
     fun onStockCountChange(stock: String) {
         if (stock.isEmpty() || stock.all { it.isDigit() }) {
-            _uiState.update { it.copy(stockCount = stock) }
+            _uiState.update { it.copy(stockCount = stock, stockError = null) }
         }
     }
 
@@ -194,11 +195,13 @@ class AddMedicationViewModel(
     fun save() {
         val state = _uiState.value
         val trimmedName = state.name.trim()
+        val stockNum = state.stockCount.toIntOrNull() ?: 0
 
         var hasError = false
         var nameErr: String? = null
         var daysErr: String? = null
         var timesErr: String? = null
+        var stockErr: String? = null
 
         if (trimmedName.isEmpty()) {
             nameErr = "Medication name is required."
@@ -211,6 +214,9 @@ class AddMedicationViewModel(
         if (state.times.isEmpty()) {
             timesErr = "Add at least one reminder time."
             hasError = true
+        } else if (stockNum <= 0) {
+            stockErr = "This medicine is out of stock. Please refill first to schedule reminders."
+            hasError = true
         }
 
         if (hasError) {
@@ -218,7 +224,8 @@ class AddMedicationViewModel(
                 it.copy(
                     nameError = nameErr,
                     daysError = daysErr,
-                    timesError = timesErr
+                    timesError = timesErr,
+                    stockError = stockErr
                 )
             }
             return

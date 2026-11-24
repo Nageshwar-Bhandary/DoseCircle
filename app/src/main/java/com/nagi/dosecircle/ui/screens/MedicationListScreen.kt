@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
@@ -31,6 +32,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,8 +47,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
@@ -88,6 +92,9 @@ fun MedicationListScreen(
 
     val medications by viewModel.medications.collectAsState()
     var medicationToDelete by remember { mutableStateOf<Medication?>(null) }
+    var medicationToRefill by remember { mutableStateOf<Medication?>(null) }
+    var refillQuantityText by remember { mutableStateOf("") }
+    var refillErrorText by remember { mutableStateOf<String?>(null) }
     var showSignOutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -164,7 +171,12 @@ fun MedicationListScreen(
                     MedicationItemCard(
                         medication = medication,
                         onClick = { onNavigateToEditMedication(medication.id) },
-                        onDeleteClick = { medicationToDelete = medication }
+                        onDeleteClick = { medicationToDelete = medication },
+                        onRefillClick = {
+                            medicationToRefill = medication
+                            refillQuantityText = ""
+                            refillErrorText = null
+                        }
                     )
                 }
             }
@@ -188,6 +200,64 @@ fun MedicationListScreen(
                 dismissButton = {
                     TextButton(
                         onClick = { medicationToDelete = null }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        medicationToRefill?.let { medication ->
+            AlertDialog(
+                onDismissRequest = {
+                    medicationToRefill = null
+                    refillQuantityText = ""
+                    refillErrorText = null
+                },
+                title = { Text("Refill ${medication.name}") },
+                text = {
+                    Column {
+                        Text("Enter the quantity to add to current stock (${medication.stockCount}):")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = refillQuantityText,
+                            onValueChange = {
+                                refillQuantityText = it
+                                refillErrorText = null
+                            },
+                            label = { Text("Quantity") },
+                            isError = refillErrorText != null,
+                            supportingText = refillErrorText?.let { { Text(it) } },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val qty = refillQuantityText.toIntOrNull()
+                            if (qty == null || qty <= 0) {
+                                refillErrorText = "Enter a valid positive number"
+                            } else {
+                                viewModel.refillMedication(medication, qty)
+                                medicationToRefill = null
+                                refillQuantityText = ""
+                                refillErrorText = null
+                            }
+                        }
+                    ) {
+                        Text("Refill")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            medicationToRefill = null
+                            refillQuantityText = ""
+                            refillErrorText = null
+                        }
                     ) {
                         Text("Cancel")
                     }
@@ -227,8 +297,12 @@ fun MedicationItemCard(
     medication: Medication,
     onClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onRefillClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isOutOfStock = medication.stockCount == 0
+    val isLowStock = !isOutOfStock && medication.stockCount <= medication.lowStockThreshold
+
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -271,11 +345,49 @@ fun MedicationItemCard(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = medication.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = medication.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (isOutOfStock) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.error,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "Out of Stock",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else if (isLowStock) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = Color(0xFFFF9800), // Visible orange Low stock badge
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "Low stock",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -290,15 +402,27 @@ fun MedicationItemCard(
                 Text(
                     text = "Stock: ${medication.stockCount}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (
-                        medication.stockCount <= medication.lowStockThreshold &&
-                        medication.stockCount > 0
-                    ) {
+                    color = if (isOutOfStock) {
                         MaterialTheme.colorScheme.error
+                    } else if (isLowStock) {
+                        Color(0xFFFF9800)
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
+
+                if (isOutOfStock) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "This medicine is out of stock. Refill it to resume reminders.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            TextButton(onClick = onRefillClick) {
+                Text("Refill")
             }
 
             IconButton(onClick = onDeleteClick) {
