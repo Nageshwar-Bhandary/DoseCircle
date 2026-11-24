@@ -51,8 +51,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
+import com.nagi.dosecircle.DoseCircleApp
 import com.nagi.dosecircle.R
 import com.nagi.dosecircle.data.entity.Medication
+import com.nagi.dosecircle.util.RequestActivityRecognitionPermissionEffect
 import com.nagi.dosecircle.util.RequestNotificationPermissionEffect
 import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 import java.io.File
@@ -68,7 +71,20 @@ fun MedicationListScreen(
     onNavigateToHistory: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val app = context.applicationContext as? DoseCircleApp
+
     RequestNotificationPermissionEffect()
+    RequestActivityRecognitionPermissionEffect(
+        onPermissionResult = { isGranted ->
+            if (isGranted && app != null) {
+                val personId = app.sessionManager.currentPersonId.value
+                if (personId != null) {
+                    app.stepTracker.onPermissionGranted(personId)
+                }
+            }
+        }
+    )
 
     val medications by viewModel.medications.collectAsState()
     var medicationToDelete by remember { mutableStateOf<Medication?>(null) }

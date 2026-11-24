@@ -36,6 +36,17 @@ object PermissionHelper {
         }
     }
 
+    fun hasActivityRecognitionPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACTIVITY_RECOGNITION
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
     fun openExactAlarmSetting(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
@@ -60,6 +71,23 @@ fun RequestNotificationPermissionEffect(
 
         LaunchedEffect(Unit) {
             launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+}
+
+@Composable
+fun RequestActivityRecognitionPermissionEffect(
+    onPermissionResult: (Boolean) -> Unit = {}
+) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val launcher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            onPermissionResult(isGranted)
+        }
+
+        LaunchedEffect(Unit) {
+            launcher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
         }
     }
 }
