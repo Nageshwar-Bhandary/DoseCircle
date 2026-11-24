@@ -1,3 +1,4 @@
+
 package com.nagi.dosecircle.session
 
 import com.google.firebase.auth.FirebaseAuth
@@ -21,25 +22,31 @@ class SessionManager(
 
     private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
         val user = auth.currentUser
+
         scope.launch {
             if (user != null) {
                 val previousPersonId = _currentPersonId.value
+
                 val person = personRepository.getOrCreatePersonForUser(
                     uid = user.uid,
                     email = user.email,
                     displayName = user.displayName
                 )
+
                 _currentPersonId.value = person.id
-                // On login, reschedule that person's alarms
+
+                // On login, reschedule that person's alarms.
                 if (previousPersonId != person.id) {
                     alarmScheduler.scheduleAlarmsForPerson(person.id)
                 }
             } else {
                 val previousPersonId = _currentPersonId.value
+
                 if (previousPersonId != null) {
-                    // On logout, cancel all alarms for that person
+                    // On logout, cancel all alarms for that person.
                     alarmScheduler.cancelAlarmsForPerson(previousPersonId)
                 }
+
                 _currentPersonId.value = null
             }
         }
