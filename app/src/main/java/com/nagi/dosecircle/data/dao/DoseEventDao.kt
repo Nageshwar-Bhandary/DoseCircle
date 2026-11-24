@@ -27,4 +27,7 @@ interface DoseEventDao {
 
     @Query("SELECT * FROM dose_events WHERE id = :id LIMIT 1")
     suspend fun getDoseEventById(id: Long): DoseEvent?
+
+    @Query("SELECT * FROM dose_events WHERE personId = :personId AND cloudId = :cloudId LIMIT 1")
+    suspend fun getDoseEventByCloudId(personId: Long, cloudId: String): DoseEvent?
 }

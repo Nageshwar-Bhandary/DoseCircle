@@ -25,4 +25,7 @@ interface MedicationDao {
 
     @Query("SELECT * FROM medications WHERE id = :id LIMIT 1")
     suspend fun getMedicationById(id: Long): Medication?
+
+    @Query("SELECT * FROM medications WHERE personId = :personId AND cloudId = :cloudId LIMIT 1")
+    suspend fun getMedicationByCloudId(personId: Long, cloudId: String): Medication?
 }
