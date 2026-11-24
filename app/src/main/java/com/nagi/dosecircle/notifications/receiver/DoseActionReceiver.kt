@@ -8,6 +8,7 @@ import android.util.Log
 import com.nagi.dosecircle.DoseCircleApp
 import com.nagi.dosecircle.data.entity.DoseStatus
 import com.nagi.dosecircle.util.Constants
+import com.nagi.dosecircle.util.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -44,11 +45,30 @@ class DoseActionReceiver : BroadcastReceiver() {
                     app.doseEventRepository.updateDoseStatus(doseEventId, newStatus, nowMillis)
                     app.doseEventSyncRepository.uploadDoseEvent(doseEventId)
                     Log.d(TAG, "DoseEvent $doseEventId updated to $newStatus at $nowMillis")
+
+                    // Deduct stock only when TAKEN
+                    if (newStatus == DoseStatus.TAKEN) {
+                        val medId = doseEvent.medicationId
+                        val stockBefore = app.medicationRepository.getMedicationById(medId)?.stockCount ?: 0
+                        app.medicationRepository.decreaseStock(medId)
+                        val medAfter = app.medicationRepository.getMedicationById(medId)
+                        if (medAfter != null) {
+                            app.firestoreSyncRepository.uploadMedication(medId)
+
+                            val threshold = medAfter.lowStockThreshold
+                            if (threshold > 0 &&
+                                (medAfter.stockCount == 0 ||
+                                        (stockBefore > threshold && medAfter.stockCount <= threshold))
+                            ) {
+                                NotificationHelper.showLowStockAlert(context, medAfter)
+                            }
+                        }
+                    }
                 } else {
                     Log.d(TAG, "DoseEvent $doseEventId is not PENDING (current=${doseEvent?.status}), ignoring action $action")
                 }
 
-                // Cancel the notification
+                // Cancel the dose notification
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.cancel(doseEventId.toInt())
             } catch (e: Exception) {

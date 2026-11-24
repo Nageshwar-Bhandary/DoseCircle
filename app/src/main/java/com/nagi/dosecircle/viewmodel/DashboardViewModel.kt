@@ -14,8 +14,10 @@ import com.nagi.dosecircle.data.entity.Schedule
 import com.nagi.dosecircle.data.entity.ScheduleTime
 import com.nagi.dosecircle.data.repository.DoseEventRepository
 import com.nagi.dosecircle.data.repository.DoseEventSyncRepository
+import com.nagi.dosecircle.data.repository.FirestoreSyncRepository
 import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
+import com.nagi.dosecircle.util.NotificationHelper
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -61,7 +63,8 @@ class DashboardViewModel(
     private val currentPersonIdFlow: StateFlow<Long?>,
     private val medicationRepository: MedicationRepository,
     private val doseEventRepository: DoseEventRepository,
-    private val doseEventSyncRepository: DoseEventSyncRepository? = null
+    private val doseEventSyncRepository: DoseEventSyncRepository? = null,
+    private val firestoreSyncRepository: FirestoreSyncRepository? = null
 ) : ViewModel() {
 
     val uiState: StateFlow<DashboardUiState> = currentPersonIdFlow
@@ -187,6 +190,26 @@ class DashboardViewModel(
                 doseEventRepository.updateDoseStatus(doseEventId, DoseStatus.TAKEN, nowMillis)
                 doseEventSyncRepository?.uploadDoseEvent(doseEventId)
                 cancelNotification(doseEventId)
+
+                // Deduct stock
+                val medId = event.medicationId
+                val stockBefore = medicationRepository.getMedicationById(medId)?.stockCount ?: 0
+                medicationRepository.decreaseStock(medId)
+                val medAfter = medicationRepository.getMedicationById(medId)
+                if (medAfter != null) {
+                    val app = context.applicationContext as? com.nagi.dosecircle.DoseCircleApp
+                    // Sync updated stock to Firestore
+                    app?.firestoreSyncRepository?.uploadMedication(medId)
+
+                    // Notify only on threshold crossing or reaching zero
+                    val threshold = medAfter.lowStockThreshold
+                    if (threshold > 0 &&
+                        (medAfter.stockCount == 0 ||
+                                (stockBefore > threshold && medAfter.stockCount <= threshold))
+                    ) {
+                        com.nagi.dosecircle.util.NotificationHelper.showLowStockAlert(context, medAfter)
+                    }
+                }
             }
         }
     }
@@ -224,7 +247,8 @@ class DashboardViewModel(
                             currentPersonIdFlow = app.sessionManager.currentPersonId,
                             medicationRepository = app.medicationRepository,
                             doseEventRepository = app.doseEventRepository,
-                            doseEventSyncRepository = app.doseEventSyncRepository
+                            doseEventSyncRepository = app.doseEventSyncRepository,
+                            firestoreSyncRepository = app.firestoreSyncRepository
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

@@ -48,6 +48,14 @@ class MedicationListViewModel(
         }
     }
 
+    fun refillMedication(medication: Medication, quantity: Int) {
+        if (quantity <= 0) return
+        viewModelScope.launch {
+            medicationRepository.increaseStock(medication.id, quantity)
+            firestoreSyncRepository?.uploadMedication(medication.id)
+        }
+    }
+
     companion object {
         fun provideFactory(app: DoseCircleApp): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
