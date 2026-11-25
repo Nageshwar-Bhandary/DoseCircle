@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -74,6 +75,7 @@ fun MedicationListScreen(
     onSignOut: () -> Unit = {},
     onNavigateToDashboard: () -> Unit,
     onNavigateToHistory: () -> Unit = {},
+    onNavigateToCaregivers: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -117,6 +119,13 @@ fun MedicationListScreen(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_history),
                             contentDescription = "Medication History"
+                        )
+                    }
+
+                    IconButton(onClick = onNavigateToCaregivers) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Caregivers"
                         )
                     }
 
@@ -409,7 +418,7 @@ fun MedicationItemCard(
                         Box(
                             modifier = Modifier
                                 .background(
-                                    color = Color(0xFFFF9800), // Visible orange Low stock badge
+                                    color = Color(0xFFFF9800),
                                     shape = RoundedCornerShape(4.dp)
                                 )
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
