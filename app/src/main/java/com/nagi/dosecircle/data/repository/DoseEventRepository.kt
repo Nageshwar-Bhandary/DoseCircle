@@ -30,4 +30,8 @@ class DoseEventRepository(private val doseEventDao: DoseEventDao) {
     suspend fun getDoseEventById(id: Long): DoseEvent? {
         return doseEventDao.getDoseEventById(id)
     }
+
+    suspend fun getDoseEventByCloudId(personId: Long, cloudId: String): DoseEvent? {
+        return doseEventDao.getDoseEventByCloudId(personId, cloudId)
+    }
 }

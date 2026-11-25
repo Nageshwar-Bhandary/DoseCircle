@@ -27,6 +27,10 @@ class MedicationRepository(private val database: AppDatabase) {
         return medicationDao.getMedicationById(id)
     }
 
+    suspend fun getMedicationByCloudId(personId: Long, cloudId: String): Medication? {
+        return medicationDao.getMedicationByCloudId(personId, cloudId)
+    }
+
     suspend fun decreaseStock(id: Long, amount: Int = 1) {
         medicationDao.decreaseStock(id, amount)
     }

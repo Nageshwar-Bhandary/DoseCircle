@@ -1,3 +1,4 @@
+
 package com.nagi.dosecircle.ui.screens
 
 import androidx.compose.foundation.Image
@@ -49,13 +50,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.platform.LocalContext
 import com.nagi.dosecircle.DoseCircleApp
 import com.nagi.dosecircle.R
 import com.nagi.dosecircle.data.entity.Medication
@@ -79,6 +80,7 @@ fun MedicationListScreen(
     val app = context.applicationContext as? DoseCircleApp
 
     RequestNotificationPermissionEffect()
+
     RequestActivityRecognitionPermissionEffect(
         onPermissionResult = { isGranted ->
             if (isGranted && app != null) {
@@ -100,7 +102,9 @@ fun MedicationListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Medicines") },
+                title = {
+                    Text("My Medicines")
+                },
                 actions = {
                     IconButton(onClick = onNavigateToDashboard) {
                         Icon(
@@ -116,7 +120,9 @@ fun MedicationListScreen(
                         )
                     }
 
-                    IconButton(onClick = { showSignOutDialog = true }) {
+                    IconButton(onClick = {
+                        showSignOutDialog = true
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = "Sign Out"
@@ -141,6 +147,7 @@ fun MedicationListScreen(
         },
         modifier = modifier
     ) { innerPadding ->
+
         if (medications.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -166,7 +173,7 @@ fun MedicationListScreen(
             ) {
                 items(
                     items = medications,
-                    key = { it.id }
+                    key = { medication -> "medication_${medication.id}" }
                 ) { medication ->
                     MedicationItemCard(
                         medication = medication,
@@ -184,9 +191,15 @@ fun MedicationListScreen(
 
         medicationToDelete?.let { medication ->
             AlertDialog(
-                onDismissRequest = { medicationToDelete = null },
-                title = { Text("Delete Medicine") },
-                text = { Text("Are you sure you want to delete ${medication.name}?") },
+                onDismissRequest = {
+                    medicationToDelete = null
+                },
+                title = {
+                    Text("Delete Medicine")
+                },
+                text = {
+                    Text("Are you sure you want to delete ${medication.name}?")
+                },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -194,12 +207,17 @@ fun MedicationListScreen(
                             medicationToDelete = null
                         }
                     ) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                        Text(
+                            "Delete",
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 },
                 dismissButton = {
                     TextButton(
-                        onClick = { medicationToDelete = null }
+                        onClick = {
+                            medicationToDelete = null
+                        }
                     ) {
                         Text("Cancel")
                     }
@@ -267,9 +285,15 @@ fun MedicationListScreen(
 
         if (showSignOutDialog) {
             AlertDialog(
-                onDismissRequest = { showSignOutDialog = false },
-                title = { Text("Sign Out") },
-                text = { Text("Are you sure you want to sign out of DoseCircle?") },
+                onDismissRequest = {
+                    showSignOutDialog = false
+                },
+                title = {
+                    Text("Sign Out")
+                },
+                text = {
+                    Text("Are you sure you want to sign out of DoseCircle?")
+                },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -277,12 +301,17 @@ fun MedicationListScreen(
                             onSignOut()
                         }
                     ) {
-                        Text("Sign Out", color = MaterialTheme.colorScheme.error)
+                        Text(
+                            "Sign Out",
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 },
                 dismissButton = {
                     TextButton(
-                        onClick = { showSignOutDialog = false }
+                        onClick = {
+                            showSignOutDialog = false
+                        }
                     ) {
                         Text("Cancel")
                     }
@@ -306,7 +335,9 @@ fun MedicationItemCard(
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
     ) {
         Row(
             modifier = Modifier
@@ -314,7 +345,9 @@ fun MedicationItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val photoFile = medication.photoUri?.let { File(it) }
+            val photoFile = medication.photoUri?.let {
+                File(it)
+            }
 
             if (photoFile != null && photoFile.exists()) {
                 Image(
@@ -330,7 +363,9 @@ fun MedicationItemCard(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
