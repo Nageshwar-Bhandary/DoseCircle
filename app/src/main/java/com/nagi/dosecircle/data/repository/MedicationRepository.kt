@@ -31,6 +31,14 @@ class MedicationRepository(private val database: AppDatabase) {
         return medicationDao.getMedicationByCloudId(personId, cloudId)
     }
 
+    suspend fun decreaseStock(id: Long, amount: Int = 1) {
+        medicationDao.decreaseStock(id, amount)
+    }
+
+    suspend fun increaseStock(id: Long, amount: Int) {
+        medicationDao.increaseStock(id, amount)
+    }
+
     suspend fun saveMedicationWithSchedule(
         medication: Medication,
         schedule: Schedule,

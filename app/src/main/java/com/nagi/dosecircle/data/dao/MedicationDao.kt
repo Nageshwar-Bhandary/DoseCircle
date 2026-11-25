@@ -28,4 +28,10 @@ interface MedicationDao {
 
     @Query("SELECT * FROM medications WHERE personId = :personId AND cloudId = :cloudId LIMIT 1")
     suspend fun getMedicationByCloudId(personId: Long, cloudId: String): Medication?
+
+    @Query("UPDATE medications SET stockCount = MAX(stockCount - :amount, 0) WHERE id = :id")
+    suspend fun decreaseStock(id: Long, amount: Int = 1)
+
+    @Query("UPDATE medications SET stockCount = stockCount + :amount WHERE id = :id")
+    suspend fun increaseStock(id: Long, amount: Int)
 }

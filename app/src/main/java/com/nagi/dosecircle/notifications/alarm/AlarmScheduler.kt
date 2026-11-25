@@ -12,6 +12,7 @@ import com.nagi.dosecircle.data.repository.PersonRepository
 import com.nagi.dosecircle.notifications.receiver.DoseAlarmReceiver
 import com.nagi.dosecircle.util.Constants
 import com.nagi.dosecircle.util.PermissionHelper
+import kotlinx.coroutines.flow.firstOrNull
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -118,6 +119,25 @@ class AlarmScheduler(
         for (time in times) {
             cancelAlarmForScheduleTime(time.id)
         }
+    }
+
+    suspend fun cancelAlarmsForMedication(medicationId: Long) {
+        val schedules = medicationRepository.getSchedulesForMedication(medicationId).firstOrNull() ?: emptyList()
+        for (schedule in schedules) {
+            cancelForSchedule(schedule.id)
+        }
+        Log.d(TAG, "cancelAlarmsForMedication completed for medicationId=$medicationId across ${schedules.size} schedules")
+    }
+
+    suspend fun scheduleAlarmsForMedication(medicationId: Long): Int {
+        val schedules = medicationRepository.getSchedulesForMedication(medicationId).firstOrNull() ?: emptyList()
+        var scheduledCount = 0
+        for (schedule in schedules) {
+            if (schedule.isActive) {
+                scheduledCount += scheduleForSchedule(schedule.id)
+            }
+        }
+        return scheduledCount
     }
 
     suspend fun cancelAlarmsForPerson(personId: Long) {
