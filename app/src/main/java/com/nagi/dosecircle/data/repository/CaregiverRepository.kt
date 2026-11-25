@@ -71,8 +71,11 @@ class CaregiverRepository(
             val expiryMillis = System.currentTimeMillis() + (EXPIRY_MINUTES * 60 * 1000)
             val expiresAt = Timestamp(Date(expiryMillis))
 
+            val patientName = auth.currentUser?.displayName ?: ""
+
             val codeData = mapOf(
                 "patientUid" to uid,
+                "patientName" to patientName,
                 "createdAt" to now,
                 "expiresAt" to expiresAt
             )
