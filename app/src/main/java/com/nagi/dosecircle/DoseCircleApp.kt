@@ -9,6 +9,7 @@ import android.app.Activity
 import android.os.Bundle
 import com.nagi.dosecircle.data.repository.ActivityRepository
 import com.nagi.dosecircle.data.repository.AuthRepository
+import com.nagi.dosecircle.data.repository.CaregiverRepository
 import com.nagi.dosecircle.data.repository.DoseEventRepository
 import com.nagi.dosecircle.data.repository.DoseEventSyncRepository
 import com.nagi.dosecircle.data.repository.FirestoreSyncRepository
@@ -123,6 +124,10 @@ class DoseCircleApp : Application() {
 
     val firestoreSyncRepository: FirestoreSyncRepository by lazy {
         FirestoreSyncRepository(database)
+    }
+
+    val caregiverRepository: CaregiverRepository by lazy {
+        CaregiverRepository()
     }
 
     val doseEventRepository: DoseEventRepository by lazy {
