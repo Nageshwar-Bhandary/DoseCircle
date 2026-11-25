@@ -1,3 +1,4 @@
+
 package com.nagi.dosecircle.ui.screens
 
 import androidx.compose.foundation.background
@@ -56,7 +57,9 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Today's Doses") },
+                title = {
+                    Text("Today's Doses")
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -73,12 +76,12 @@ fun DashboardScreen(
         },
         modifier = modifier
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Summary row at top
             SummaryRow(
                 takenCount = uiState.takenCount,
                 skippedCount = uiState.skippedCount,
@@ -104,39 +107,59 @@ fun DashboardScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = 24.dp
+                    ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     if (uiState.todayDoses.isNotEmpty()) {
-                        item {
+                        item(key = "today_header") {
                             Text(
                                 text = "Today's doses",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                modifier = Modifier.padding(
+                                    top = 8.dp,
+                                    bottom = 4.dp
+                                )
                             )
                         }
 
-                        items(uiState.todayDoses, key = { it.doseEvent.id }) { item ->
+                        items(
+                            items = uiState.todayDoses,
+                            key = { item -> "today_${item.doseEvent.id}" }
+                        ) { item ->
                             TodayDoseCard(
                                 item = item,
-                                onTaken = { viewModel.markDoseTaken(item.doseEvent.id) },
-                                onSkip = { viewModel.markDoseSkipped(item.doseEvent.id) }
+                                onTaken = {
+                                    viewModel.markDoseTaken(item.doseEvent.id)
+                                },
+                                onSkip = {
+                                    viewModel.markDoseSkipped(item.doseEvent.id)
+                                }
                             )
                         }
                     }
 
                     if (uiState.upcomingDoses.isNotEmpty()) {
-                        item {
+                        item(key = "upcoming_header") {
                             Text(
                                 text = "Upcoming",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                                modifier = Modifier.padding(
+                                    top = 16.dp,
+                                    bottom = 4.dp
+                                )
                             )
                         }
 
-                        items(uiState.upcomingDoses, key = { it.scheduleTimeId }) { item ->
+                        items(
+                            items = uiState.upcomingDoses,
+                            key = { item -> "upcoming_${item.scheduleTimeId}" }
+                        ) { item ->
                             UpcomingDoseCard(item = item)
                         }
                     }
@@ -158,10 +181,30 @@ private fun SummaryRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        SummaryCard(label = "Taken", count = takenCount, color = Color(0xFF4CAF50), modifier = Modifier.weight(1f))
-        SummaryCard(label = "Skipped", count = skippedCount, color = Color(0xFF9E9E9E), modifier = Modifier.weight(1f))
-        SummaryCard(label = "Missed", count = missedCount, color = Color(0xFFF44336), modifier = Modifier.weight(1f))
-        SummaryCard(label = "Pending", count = pendingCount, color = Color(0xFFFF9800), modifier = Modifier.weight(1f))
+        SummaryCard(
+            label = "Taken",
+            count = takenCount,
+            color = Color(0xFF4CAF50),
+            modifier = Modifier.weight(1f)
+        )
+        SummaryCard(
+            label = "Skipped",
+            count = skippedCount,
+            color = Color(0xFF9E9E9E),
+            modifier = Modifier.weight(1f)
+        )
+        SummaryCard(
+            label = "Missed",
+            count = missedCount,
+            color = Color(0xFFF44336),
+            modifier = Modifier.weight(1f)
+        )
+        SummaryCard(
+            label = "Pending",
+            count = pendingCount,
+            color = Color(0xFFFF9800),
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -318,7 +361,9 @@ private fun UpcomingDoseCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+
             Spacer(modifier = Modifier.width(8.dp))
+
             Box(
                 modifier = Modifier
                     .background(

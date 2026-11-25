@@ -1,3 +1,4 @@
+
 package com.nagi.dosecircle.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -38,11 +39,16 @@ class MedicationListViewModel(
 
     fun deleteMedication(medication: Medication) {
         viewModelScope.launch {
-            val schedules = medicationRepository.getSchedulesForMedication(medication.id).firstOrNull() ?: emptyList()
+            val schedules = medicationRepository
+                .getSchedulesForMedication(medication.id)
+                .firstOrNull() ?: emptyList()
+
             for (schedule in schedules) {
                 alarmScheduler?.cancelForSchedule(schedule.id)
             }
+
             medicationRepository.deleteMedication(medication)
+
             // Fire-and-forget Firestore delete; silently skipped if offline or logged out
             firestoreSyncRepository?.deleteMedication(medication.cloudId)
         }
@@ -69,7 +75,10 @@ class MedicationListViewModel(
                             firestoreSyncRepository = app.firestoreSyncRepository
                         ) as T
                     }
-                    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+
+                    throw IllegalArgumentException(
+                        "Unknown ViewModel class: ${modelClass.name}"
+                    )
                 }
             }
     }

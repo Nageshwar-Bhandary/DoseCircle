@@ -1,12 +1,15 @@
+
 package com.nagi.dosecircle
 
+import android.app.Activity
 import android.app.Application
+import android.content.Context
+import android.os.Bundle
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.google.firebase.auth.FirebaseAuth
 import com.nagi.dosecircle.data.database.AppDatabase
-import android.app.Activity
-import android.os.Bundle
 import com.nagi.dosecircle.data.repository.ActivityRepository
 import com.nagi.dosecircle.data.repository.AuthRepository
 import com.nagi.dosecircle.data.repository.CaregiverRepository
@@ -15,6 +18,7 @@ import com.nagi.dosecircle.data.repository.DoseEventSyncRepository
 import com.nagi.dosecircle.data.repository.FirestoreSyncRepository
 import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
+import com.nagi.dosecircle.data.repository.RestoreRepository
 import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
 import com.nagi.dosecircle.notifications.worker.MissedSweepWorker
 import com.nagi.dosecircle.session.SessionManager
@@ -35,8 +39,10 @@ class DoseCircleApp : Application() {
         NotificationHelper.createNotificationChannels(this)
         scheduleMissedSweepWorker()
         scheduleStepSyncWorker()
-        // Initialize sessionManager so it starts listening to auth state
+
+        // Initialize sessionManager so it starts listening to auth state.
         sessionManager
+
         setupForegroundStepTracking()
     }
 
@@ -65,7 +71,7 @@ class DoseCircleApp : Application() {
     }
 
     private fun setupForegroundStepTracking() {
-        // Observe currentPersonId to start/stop tracking when user changes
+        // Observe currentPersonId to start/stop tracking when user changes.
         CoroutineScope(Dispatchers.Main).launch {
             sessionManager.currentPersonId.collect { personId ->
                 if (personId != null && foregroundActivityCount > 0) {
@@ -76,12 +82,11 @@ class DoseCircleApp : Application() {
             }
         }
 
-        // Track app foreground / background transitions
+        // Track app foreground/background transitions.
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityStarted(activity: Activity) {
                 foregroundActivityCount++
                 if (foregroundActivityCount == 1) {
-                    // App came to foreground
                     val personId = sessionManager.currentPersonId.value
                     if (personId != null) {
                         stepTracker.startForegroundTracking(personId)
@@ -93,15 +98,24 @@ class DoseCircleApp : Application() {
                 foregroundActivityCount--
                 if (foregroundActivityCount <= 0) {
                     foregroundActivityCount = 0
-                    // App went to background
                     stepTracker.stopForegroundTracking()
                 }
             }
 
-            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+            override fun onActivityCreated(
+                activity: Activity,
+                savedInstanceState: Bundle?
+            ) {}
+
             override fun onActivityResumed(activity: Activity) {}
+
             override fun onActivityPaused(activity: Activity) {}
-            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+
+            override fun onActivitySaveInstanceState(
+                activity: Activity,
+                outState: Bundle
+            ) {}
+
             override fun onActivityDestroyed(activity: Activity) {}
         })
     }
@@ -154,10 +168,30 @@ class DoseCircleApp : Application() {
         )
     }
 
+    val restoreRepository: RestoreRepository by lazy {
+        RestoreRepository(
+            database = database,
+            medicationRepository = medicationRepository,
+            doseEventRepository = doseEventRepository,
+            alarmScheduler = alarmScheduler,
+            auth = FirebaseAuth.getInstance()
+        )
+    }
+
+    val restoreSessionPreferences by lazy {
+        getSharedPreferences(
+            "restore_session_prefs",
+            Context.MODE_PRIVATE
+        )
+    }
+
     val sessionManager: SessionManager by lazy {
         SessionManager(
             personRepository = personRepository,
-            alarmScheduler = alarmScheduler
+            alarmScheduler = alarmScheduler,
+            restoreRepository = restoreRepository,
+            restorePreferences = restoreSessionPreferences,
+            medicationRepository = medicationRepository
         )
     }
 }
