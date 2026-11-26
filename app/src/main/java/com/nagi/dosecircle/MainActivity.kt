@@ -17,6 +17,7 @@ import com.nagi.dosecircle.ui.screens.CareForScreen
 import com.nagi.dosecircle.ui.screens.DashboardScreen
 import com.nagi.dosecircle.ui.screens.HistoryScreen
 import com.nagi.dosecircle.ui.screens.MedicationListScreen
+import com.nagi.dosecircle.ui.screens.PatientDashboardScreen
 import com.nagi.dosecircle.ui.screens.SignInScreen
 import com.nagi.dosecircle.ui.theme.DoseCircleTheme
 import com.nagi.dosecircle.viewmodel.AddMedicationViewModel
@@ -25,6 +26,7 @@ import com.nagi.dosecircle.viewmodel.CareForViewModel
 import com.nagi.dosecircle.viewmodel.DashboardViewModel
 import com.nagi.dosecircle.viewmodel.HistoryViewModel
 import com.nagi.dosecircle.viewmodel.MedicationListViewModel
+import com.nagi.dosecircle.viewmodel.PatientDashboardViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -120,6 +122,26 @@ class MainActivity : ComponentActivity() {
                         )
 
                         CareForScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            },
+                            onOpenPatientDashboard = { patientUid ->
+                                navController.navigate("patient_dashboard/$patientUid")
+                            }
+                        )
+                    }
+
+                    composable(
+                        route = "patient_dashboard/{patientUid}",
+                        arguments = listOf(navArgument("patientUid") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val patientUid = backStackEntry.arguments?.getString("patientUid") ?: ""
+                        val viewModel: PatientDashboardViewModel = viewModel(
+                            factory = PatientDashboardViewModel.provideFactory(app, patientUid)
+                        )
+
+                        PatientDashboardScreen(
                             viewModel = viewModel,
                             onNavigateBack = {
                                 navController.popBackStack()

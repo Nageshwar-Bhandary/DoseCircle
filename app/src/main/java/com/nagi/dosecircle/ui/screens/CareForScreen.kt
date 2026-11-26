@@ -1,6 +1,7 @@
 package com.nagi.dosecircle.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,6 +59,7 @@ private val GreenActive = Color(0xFF4CAF50)
 fun CareForScreen(
     viewModel: CareForViewModel,
     onNavigateBack: () -> Unit,
+    onOpenPatientDashboard: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val inviteCode by viewModel.inviteCode.collectAsState()
@@ -237,7 +239,12 @@ fun CareForScreen(
                     ) { link ->
                         CaregiverLinkItem(
                             link = link,
-                            onCancelOrLeave = { viewModel.requestCancelOrLeave(link) }
+                            onCancelOrLeave = { viewModel.requestCancelOrLeave(link) },
+                            onOpenPatientDashboard = {
+                                if (link.status.equals("active", ignoreCase = true) && link.patientUid.isNotBlank()) {
+                                    onOpenPatientDashboard(link.patientUid)
+                                }
+                            }
                         )
                     }
                 }
@@ -286,13 +293,18 @@ fun CareForScreen(
 fun CaregiverLinkItem(
     link: CaregiverLink,
     onCancelOrLeave: () -> Unit,
+    onOpenPatientDashboard: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isActive = link.status.equals("active", ignoreCase = true)
     val patientDisplayName = link.patientName?.ifBlank { null } ?: "Patient"
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (isActive) Modifier.clickable(onClick = onOpenPatientDashboard) else Modifier
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
