@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
@@ -76,6 +77,7 @@ fun MedicationListScreen(
     onNavigateToDashboard: () -> Unit,
     onNavigateToHistory: () -> Unit = {},
     onNavigateToCaregivers: () -> Unit = {},
+    onNavigateToCareFor: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -129,9 +131,18 @@ fun MedicationListScreen(
                         )
                     }
 
-                    IconButton(onClick = {
-                        showSignOutDialog = true
-                    }) {
+                    IconButton(onClick = onNavigateToCareFor) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = "People I Care For"
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            showSignOutDialog = true
+                        }
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = "Sign Out"
@@ -186,8 +197,12 @@ fun MedicationListScreen(
                 ) { medication ->
                     MedicationItemCard(
                         medication = medication,
-                        onClick = { onNavigateToEditMedication(medication.id) },
-                        onDeleteClick = { medicationToDelete = medication },
+                        onClick = {
+                            onNavigateToEditMedication(medication.id)
+                        },
+                        onDeleteClick = {
+                            medicationToDelete = medication
+                        },
                         onRefillClick = {
                             medicationToRefill = medication
                             refillQuantityText = ""
@@ -241,10 +256,14 @@ fun MedicationListScreen(
                     refillQuantityText = ""
                     refillErrorText = null
                 },
-                title = { Text("Refill ${medication.name}") },
+                title = {
+                    Text("Refill ${medication.name}")
+                },
                 text = {
                     Column {
-                        Text("Enter the quantity to add to current stock (${medication.stockCount}):")
+                        Text(
+                            "Enter the quantity to add to current stock (${medication.stockCount}):"
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = refillQuantityText,
@@ -252,10 +271,16 @@ fun MedicationListScreen(
                                 refillQuantityText = it
                                 refillErrorText = null
                             },
-                            label = { Text("Quantity") },
+                            label = {
+                                Text("Quantity")
+                            },
                             isError = refillErrorText != null,
-                            supportingText = refillErrorText?.let { { Text(it) } },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            supportingText = refillErrorText?.let {
+                                { Text(it) }
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            ),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -266,7 +291,8 @@ fun MedicationListScreen(
                         onClick = {
                             val qty = refillQuantityText.toIntOrNull()
                             if (qty == null || qty <= 0) {
-                                refillErrorText = "Enter a valid positive number"
+                                refillErrorText =
+                                    "Enter a valid positive number"
                             } else {
                                 viewModel.refillMedication(medication, qty)
                                 medicationToRefill = null
@@ -339,7 +365,8 @@ fun MedicationItemCard(
     modifier: Modifier = Modifier
 ) {
     val isOutOfStock = medication.stockCount == 0
-    val isLowStock = !isOutOfStock && medication.stockCount <= medication.lowStockThreshold
+    val isLowStock =
+        !isOutOfStock && medication.stockCount <= medication.lowStockThreshold
 
     Card(
         onClick = onClick,
@@ -388,7 +415,9 @@ fun MedicationItemCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -398,6 +427,7 @@ fun MedicationItemCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
+
                     if (isOutOfStock) {
                         Box(
                             modifier = Modifier
@@ -405,7 +435,10 @@ fun MedicationItemCard(
                                     color = MaterialTheme.colorScheme.error,
                                     shape = RoundedCornerShape(4.dp)
                                 )
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .padding(
+                                    horizontal = 6.dp,
+                                    vertical = 2.dp
+                                )
                         ) {
                             Text(
                                 text = "Out of Stock",
@@ -421,7 +454,10 @@ fun MedicationItemCard(
                                     color = Color(0xFFFF9800),
                                     shape = RoundedCornerShape(4.dp)
                                 )
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .padding(
+                                    horizontal = 6.dp,
+                                    vertical = 2.dp
+                                )
                         ) {
                             Text(
                                 text = "Low stock",

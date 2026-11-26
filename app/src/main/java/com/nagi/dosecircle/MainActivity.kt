@@ -1,3 +1,4 @@
+
 package com.nagi.dosecircle
 
 import android.os.Bundle
@@ -12,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.nagi.dosecircle.ui.screens.AddMedicationScreen
 import com.nagi.dosecircle.ui.screens.CaregiversScreen
+import com.nagi.dosecircle.ui.screens.CareForScreen
 import com.nagi.dosecircle.ui.screens.DashboardScreen
 import com.nagi.dosecircle.ui.screens.HistoryScreen
 import com.nagi.dosecircle.ui.screens.MedicationListScreen
@@ -19,11 +21,13 @@ import com.nagi.dosecircle.ui.screens.SignInScreen
 import com.nagi.dosecircle.ui.theme.DoseCircleTheme
 import com.nagi.dosecircle.viewmodel.AddMedicationViewModel
 import com.nagi.dosecircle.viewmodel.CaregiverViewModel
+import com.nagi.dosecircle.viewmodel.CareForViewModel
 import com.nagi.dosecircle.viewmodel.DashboardViewModel
 import com.nagi.dosecircle.viewmodel.HistoryViewModel
 import com.nagi.dosecircle.viewmodel.MedicationListViewModel
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -90,6 +94,35 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToCaregivers = {
                                 navController.navigate("caregivers")
+                            },
+                            onNavigateToCareFor = {
+                                navController.navigate("care_for")
+                            }
+                        )
+                    }
+
+                    composable("caregivers") {
+                        val viewModel: CaregiverViewModel = viewModel(
+                            factory = CaregiverViewModel.provideFactory(app)
+                        )
+
+                        CaregiversScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable("care_for") {
+                        val viewModel: CareForViewModel = viewModel(
+                            factory = CareForViewModel.provideFactory(app)
+                        )
+
+                        CareForScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = {
+                                navController.popBackStack()
                             }
                         )
                     }
@@ -113,19 +146,6 @@ class MainActivity : ComponentActivity() {
                         )
 
                         HistoryScreen(
-                            viewModel = viewModel,
-                            onNavigateBack = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-
-                    composable("caregivers") {
-                        val viewModel: CaregiverViewModel = viewModel(
-                            factory = CaregiverViewModel.provideFactory(app)
-                        )
-
-                        CaregiversScreen(
                             viewModel = viewModel,
                             onNavigateBack = {
                                 navController.popBackStack()

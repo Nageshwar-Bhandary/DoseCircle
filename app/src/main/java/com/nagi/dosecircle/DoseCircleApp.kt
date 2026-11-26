@@ -13,6 +13,7 @@ import com.nagi.dosecircle.data.database.AppDatabase
 import com.nagi.dosecircle.data.repository.ActivityRepository
 import com.nagi.dosecircle.data.repository.AuthRepository
 import com.nagi.dosecircle.data.repository.CaregiverRepository
+import com.nagi.dosecircle.data.repository.CaregiverLinkRepository
 import com.nagi.dosecircle.data.repository.DoseEventRepository
 import com.nagi.dosecircle.data.repository.DoseEventSyncRepository
 import com.nagi.dosecircle.data.repository.FirestoreSyncRepository
@@ -140,6 +141,7 @@ class DoseCircleApp : Application() {
         FirestoreSyncRepository(database)
     }
 
+    // Patient-side caregiver repository.
     val caregiverRepository: CaregiverRepository by lazy {
         CaregiverRepository()
     }
@@ -150,6 +152,11 @@ class DoseCircleApp : Application() {
 
     val doseEventSyncRepository: DoseEventSyncRepository by lazy {
         DoseEventSyncRepository(database)
+    }
+
+    // Caregiver-side linking repository.
+    val caregiverLinkRepository: CaregiverLinkRepository by lazy {
+        CaregiverLinkRepository()
     }
 
     val activityRepository: ActivityRepository by lazy {
