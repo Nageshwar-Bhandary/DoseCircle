@@ -18,6 +18,7 @@ import com.nagi.dosecircle.data.repository.DoseEventRepository
 import com.nagi.dosecircle.data.repository.DoseEventSyncRepository
 import com.nagi.dosecircle.data.repository.FirestoreSyncRepository
 import com.nagi.dosecircle.data.repository.MedicationRepository
+import com.nagi.dosecircle.data.repository.PatientViewRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
 import com.nagi.dosecircle.data.repository.RestoreRepository
 import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
@@ -157,6 +158,10 @@ class DoseCircleApp : Application() {
     // Caregiver-side linking repository.
     val caregiverLinkRepository: CaregiverLinkRepository by lazy {
         CaregiverLinkRepository()
+    }
+
+    val patientViewRepository: PatientViewRepository by lazy {
+        PatientViewRepository()
     }
 
     val activityRepository: ActivityRepository by lazy {
