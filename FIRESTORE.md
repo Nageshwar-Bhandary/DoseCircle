@@ -9,6 +9,7 @@
 | `users/{uid}/doseEvents/{id}` | `medicationName`, `scheduledTime`, `status`, `actionTime` | Owner read/write; linked caregivers read |
 | `inviteCodes/{code}` | `patientUid`, `createdAt`, `expiresAt` | Signed-in users can get a code by exact ID; listing denied; patient can create/delete |
 | `links/{patientUid_caregiverUid}` | `patientUid`, `caregiverUid`, `code`, `status`, names, email | Only involved patient and caregiver |
+| `notifyDeliveries/{deliveryId}` | `status`, `updatedAt`, `attempts`, `sentAt`, `fcmMessageId`, `error` | Server-only (Worker Service Account); client access denied (`allow read, write: if false;`) |
 
 ## 2. Caregiver Linking Flow
 
@@ -31,6 +32,7 @@
 - Only the patient can approve a pending caregiver link.
 - Only the involved patient and caregiver can access their link.
 - Link approval is restricted to changing the status from `pending` to `active`.
+- `notifyDeliveries/{deliveryId}`: All direct client read and write operations are strictly denied (`allow read, write: if false;`). Dispatches and delivery tracking are performed exclusively by the backend Notification Dispatcher Worker via Firebase Admin/Service Account credentials.
 
 ## 4. Invite Code Expiry
 
