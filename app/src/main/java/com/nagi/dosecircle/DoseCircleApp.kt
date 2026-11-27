@@ -9,6 +9,8 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import com.nagi.dosecircle.data.database.AppDatabase
 import com.nagi.dosecircle.data.repository.ActivityRepository
 import com.nagi.dosecircle.data.repository.AuthRepository
@@ -21,6 +23,7 @@ import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
 import com.nagi.dosecircle.data.repository.RestoreRepository
 import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
+import com.nagi.dosecircle.notifications.fcm.FcmTokenManager
 import com.nagi.dosecircle.notifications.worker.MissedSweepWorker
 import com.nagi.dosecircle.session.SessionManager
 import com.nagi.dosecircle.steps.StepSyncWorker
@@ -28,6 +31,7 @@ import com.nagi.dosecircle.steps.StepTracker
 import com.nagi.dosecircle.util.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -133,8 +137,20 @@ class DoseCircleApp : Application() {
         MedicationRepository(database)
     }
 
+    val fcmTokenManager: FcmTokenManager by lazy {
+        FcmTokenManager(
+            appScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+            firebaseAuth = FirebaseAuth.getInstance(),
+            firestore = FirebaseFirestore.getInstance(),
+            firebaseMessaging = FirebaseMessaging.getInstance()
+        )
+    }
+
     val authRepository: AuthRepository by lazy {
-        AuthRepository()
+        AuthRepository(
+            auth = FirebaseAuth.getInstance(),
+            fcmTokenManager = fcmTokenManager
+        )
     }
 
     val firestoreSyncRepository: FirestoreSyncRepository by lazy {
@@ -198,7 +214,8 @@ class DoseCircleApp : Application() {
             alarmScheduler = alarmScheduler,
             restoreRepository = restoreRepository,
             restorePreferences = restoreSessionPreferences,
-            medicationRepository = medicationRepository
+            medicationRepository = medicationRepository,
+            fcmTokenManager = fcmTokenManager
         )
     }
 }

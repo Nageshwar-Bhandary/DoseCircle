@@ -13,17 +13,30 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.nagi.dosecircle.notifications.fcm.FcmTokenManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class AuthRepository(
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth? = null,
+    private val fcmTokenManager: FcmTokenManager? = null,
+    private val signOutAction: () -> Unit = { (auth ?: FirebaseAuth.getInstance()).signOut() },
+    private val currentUidProvider: () -> String? = {
+        try {
+            (auth ?: FirebaseAuth.getInstance()).currentUser?.uid
+        } catch (_: Exception) {
+            null
+        }
+    }
 ) {
+    private val authInstance: FirebaseAuth
+        get() = auth ?: FirebaseAuth.getInstance()
 
     val currentUser: FirebaseUser?
-        get() = auth.currentUser
+        get() = try { authInstance.currentUser } catch (_: Exception) { null }
 
     suspend fun signUp(
         email: String,
@@ -38,7 +51,7 @@ class AuthRepository(
         }
 
         return try {
-            val authResult = auth.createUserWithEmailAndPassword(trimmedEmail, password).await()
+            val authResult = authInstance.createUserWithEmailAndPassword(trimmedEmail, password).await()
             val user = authResult.user ?: throw IllegalStateException("Account created but user details are unavailable.")
 
             if (trimmedName.isNotEmpty()) {
@@ -65,7 +78,7 @@ class AuthRepository(
         }
 
         return try {
-            val authResult = auth.signInWithEmailAndPassword(trimmedEmail, password).await()
+            val authResult = authInstance.signInWithEmailAndPassword(trimmedEmail, password).await()
             val user = authResult.user ?: throw IllegalStateException("Login succeeded but user details are unavailable.")
             Result.success(user)
         } catch (e: CancellationException) {
@@ -96,7 +109,7 @@ class AuthRepository(
 
     suspend fun signInWithCredential(credential: AuthCredential): Result<FirebaseUser> {
         return try {
-            val authResult = auth.signInWithCredential(credential).await()
+            val authResult = authInstance.signInWithCredential(credential).await()
             val user = authResult.user ?: throw IllegalStateException("Google sign-in succeeded but user details are unavailable.")
             Result.success(user)
         } catch (e: CancellationException) {
@@ -107,11 +120,36 @@ class AuthRepository(
         }
     }
 
-    fun logout(): Result<Unit> {
+    suspend fun logout(): Result<Unit> {
+        val uid = currentUidProvider()
+        if (uid != null && fcmTokenManager != null) {
+            try {
+                withTimeoutOrNull(2500L) {
+                    fcmTokenManager.deleteTokenOnLogout(uid)
+                }
+            } catch (e: CancellationException) {
+                fcmTokenManager.onSignOutFailed(uid)
+                throw e
+            } catch (e: Exception) {
+                logW("AuthRepository", "Failed to delete FCM token on logout: ${e.message}")
+            }
+        }
+
         return try {
-            auth.signOut()
+            signOutAction()
+            if (uid != null) {
+                fcmTokenManager?.onSignOutCompleted(uid)
+            }
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            if (uid != null) {
+                fcmTokenManager?.onSignOutFailed(uid)
+            }
+            throw e
         } catch (e: Exception) {
+            if (uid != null) {
+                fcmTokenManager?.onSignOutFailed(uid)
+            }
             Result.failure(Exception(getReadableErrorMessage(e), e))
         }
     }
@@ -124,13 +162,21 @@ class AuthRepository(
         }
 
         return try {
-            auth.sendPasswordResetEmail(trimmedEmail).await()
+            authInstance.sendPasswordResetEmail(trimmedEmail).await()
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Log.e("AuthRepository", "Firebase signInWithCredential failed: [${(e as? FirebaseAuthException)?.errorCode ?: e::class.java.simpleName}] ${e.message}", e)
             Result.failure(Exception(getReadableErrorMessage(e), e))
+        }
+    }
+
+    private fun logW(tag: String, msg: String) {
+        try {
+            Log.w(tag, msg)
+        } catch (_: Throwable) {
+            // In local JVM unit tests, android.util.Log is not mocked
         }
     }
 

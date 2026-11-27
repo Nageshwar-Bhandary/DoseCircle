@@ -13,6 +13,7 @@ import com.nagi.dosecircle.data.entity.Medication
 object NotificationHelper {
 
     const val CHANNEL_REFILL_ALERTS = "refill_alerts"
+    const val CHANNEL_CAREGIVER_ALERTS = "caregiver_alerts"
 
     fun createNotificationChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -38,6 +39,17 @@ object NotificationHelper {
                 description = "Low stock and refill alerts for medications"
             }
             notificationManager.createNotificationChannel(refillChannel)
+
+            // Caregiver alerts channel
+            val caregiverChannel = NotificationChannel(
+                CHANNEL_CAREGIVER_ALERTS,
+                "Caregiver Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Alerts and updates for caregiver events and escalations"
+                enableVibration(true)
+            }
+            notificationManager.createNotificationChannel(caregiverChannel)
         }
     }
 
