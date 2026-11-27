@@ -13,6 +13,7 @@ import com.nagi.dosecircle.MainActivity
 import com.nagi.dosecircle.R
 import com.nagi.dosecircle.data.entity.DoseEvent
 import com.nagi.dosecircle.data.entity.DoseStatus
+import com.nagi.dosecircle.notifications.worker.FollowUpReminderWorker
 import com.nagi.dosecircle.notifications.worker.MissedDoseWorker
 import com.nagi.dosecircle.util.Constants
 import androidx.work.OneTimeWorkRequestBuilder
@@ -79,6 +80,14 @@ class DoseAlarmReceiver : BroadcastReceiver() {
                     .setInputData(workDataOf(MissedDoseWorker.KEY_DOSE_EVENT_ID to doseEventId))
                     .build()
                 WorkManager.getInstance(context).enqueue(missedWorkRequest)
+
+                // Enqueue FollowUpReminderWorker with initial delay of FOLLOWUP_MINUTES
+                val followUpWorkRequest = OneTimeWorkRequestBuilder<FollowUpReminderWorker>()
+                    .setInitialDelay(Constants.FOLLOWUP_MINUTES, TimeUnit.MINUTES)
+                    .setInputData(workDataOf(FollowUpReminderWorker.KEY_DOSE_EVENT_ID to doseEventId))
+                    .addTag(FollowUpReminderWorker.getWorkTag(doseEventId))
+                    .build()
+                WorkManager.getInstance(context).enqueue(followUpWorkRequest)
 
                 // (4) Show notification on dose_reminders channel
                 showDoseNotification(context, doseEventId, medication.name, medication.dosage)
