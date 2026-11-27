@@ -25,6 +25,7 @@ import com.nagi.dosecircle.data.repository.PersonRepository
 import com.nagi.dosecircle.data.repository.RestoreRepository
 import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
 import com.nagi.dosecircle.notifications.fcm.FcmTokenManager
+import com.nagi.dosecircle.notifications.network.CaregiverNotificationClient
 import com.nagi.dosecircle.notifications.worker.MissedSweepWorker
 import com.nagi.dosecircle.session.SessionManager
 import com.nagi.dosecircle.steps.StepSyncWorker
@@ -167,8 +168,16 @@ class DoseCircleApp : Application() {
         DoseEventRepository(database.doseEventDao())
     }
 
+    val caregiverNotificationClient: CaregiverNotificationClient by lazy {
+        CaregiverNotificationClient(FirebaseAuth.getInstance())
+    }
+
     val doseEventSyncRepository: DoseEventSyncRepository by lazy {
-        DoseEventSyncRepository(database)
+        DoseEventSyncRepository(
+            database = database,
+            caregiverNotificationClient = caregiverNotificationClient,
+            context = this
+        )
     }
 
     // Caregiver-side linking repository.

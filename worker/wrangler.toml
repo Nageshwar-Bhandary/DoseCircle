@@ -1,0 +1,7 @@
+name = "dosecircle-notify"
+main = "src/index.js"
+compatibility_date = "2026-11-27"
+
+[vars]
+FIREBASE_PROJECT_ID = "dosecircle-6cc09"
+

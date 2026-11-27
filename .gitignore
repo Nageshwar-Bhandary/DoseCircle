@@ -19,8 +19,17 @@ local.properties
 .env
 .env.*
 *.env
+.dev.vars
 *.jks
 *.keystore
 secrets.properties
 google-services.json
 */google-services.json
+
+# Node & Worker dependencies
+node_modules/
+
+# Wrangler cache (Cloudflare account metadata, not credentials)
+worker/.wrangler/
+.wrangler/
+
