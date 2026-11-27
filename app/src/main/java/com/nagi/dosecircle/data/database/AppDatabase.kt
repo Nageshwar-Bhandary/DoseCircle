@@ -18,6 +18,9 @@ import com.nagi.dosecircle.data.entity.Person
 import com.nagi.dosecircle.data.entity.Schedule
 import com.nagi.dosecircle.data.entity.ScheduleTime
 
+// Database version 4 is the baseline schema. Versions 1 to 3 were never released,
+// and all test devices are already on version 4. Every future schema change must
+// bump the database version and include an explicit, proper Room Migration.
 @Database(
     entities = [
         Person::class,
@@ -28,7 +31,7 @@ import com.nagi.dosecircle.data.entity.ScheduleTime
         DailyActivity::class
     ],
     version = 4,
-    exportSchema = false
+    exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -51,7 +54,6 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "dosecircle_database"
                 )
-                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
