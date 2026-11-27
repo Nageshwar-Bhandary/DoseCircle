@@ -11,8 +11,8 @@ class DoseEventRepository(private val doseEventDao: DoseEventDao) {
         return doseEventDao.insertDoseEvent(doseEvent)
     }
 
-    suspend fun updateDoseStatus(id: Long, status: DoseStatus, actionTime: Long?) {
-        doseEventDao.updateDoseStatus(id, status, actionTime)
+    suspend fun updateDoseStatus(id: Long, status: DoseStatus, actionTime: Long?): Int {
+        return doseEventDao.updateDoseStatus(id, status, actionTime)
     }
 
     suspend fun updateCloudId(id: Long, cloudId: String) {

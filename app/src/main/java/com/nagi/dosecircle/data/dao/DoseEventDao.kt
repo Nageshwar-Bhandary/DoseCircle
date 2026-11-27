@@ -13,8 +13,8 @@ interface DoseEventDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDoseEvent(doseEvent: DoseEvent): Long
 
-    @Query("UPDATE dose_events SET status = :status, actionTime = :actionTime WHERE id = :id")
-    suspend fun updateDoseStatus(id: Long, status: DoseStatus, actionTime: Long?)
+    @Query("UPDATE dose_events SET status = :status, actionTime = :actionTime WHERE id = :id AND status = 'PENDING'")
+    suspend fun updateDoseStatus(id: Long, status: DoseStatus, actionTime: Long?): Int
 
     @Query("UPDATE dose_events SET cloudId = :cloudId WHERE id = :id")
     suspend fun updateCloudId(id: Long, cloudId: String)

@@ -5,8 +5,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.work.WorkManager
 import com.nagi.dosecircle.DoseCircleApp
 import com.nagi.dosecircle.data.entity.DoseStatus
+import com.nagi.dosecircle.notifications.worker.FollowUpReminderWorker
 import com.nagi.dosecircle.util.Constants
 import com.nagi.dosecircle.util.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
@@ -42,27 +44,37 @@ class DoseActionReceiver : BroadcastReceiver() {
                         DoseStatus.SKIPPED
                     }
                     val nowMillis = System.currentTimeMillis()
-                    app.doseEventRepository.updateDoseStatus(doseEventId, newStatus, nowMillis)
-                    app.doseEventSyncRepository.uploadDoseEvent(doseEventId)
-                    Log.d(TAG, "DoseEvent $doseEventId updated to $newStatus at $nowMillis")
+                    val rowsUpdated = app.doseEventRepository.updateDoseStatus(doseEventId, newStatus, nowMillis)
 
-                    // Deduct stock only when TAKEN
-                    if (newStatus == DoseStatus.TAKEN) {
-                        val medId = doseEvent.medicationId
-                        val stockBefore = app.medicationRepository.getMedicationById(medId)?.stockCount ?: 0
-                        app.medicationRepository.decreaseStock(medId)
-                        val medAfter = app.medicationRepository.getMedicationById(medId)
-                        if (medAfter != null) {
-                            app.firestoreSyncRepository.uploadMedication(medId)
+                    if (rowsUpdated == 1) {
+                        Log.d(TAG, "DoseEvent $doseEventId updated to $newStatus at $nowMillis (rowsUpdated=1)")
 
-                            val threshold = medAfter.lowStockThreshold
-                            if (threshold > 0 &&
-                                (medAfter.stockCount == 0 ||
-                                        (stockBefore > threshold && medAfter.stockCount <= threshold))
-                            ) {
-                                NotificationHelper.showLowStockAlert(context, medAfter)
+                        // Cancel the corresponding scheduled follow-up work
+                        WorkManager.getInstance(context)
+                            .cancelAllWorkByTag(FollowUpReminderWorker.getWorkTag(doseEventId))
+
+                        app.doseEventSyncRepository.uploadDoseEvent(doseEventId)
+
+                        // Deduct stock only when TAKEN
+                        if (newStatus == DoseStatus.TAKEN) {
+                            val medId = doseEvent.medicationId
+                            val stockBefore = app.medicationRepository.getMedicationById(medId)?.stockCount ?: 0
+                            app.medicationRepository.decreaseStock(medId)
+                            val medAfter = app.medicationRepository.getMedicationById(medId)
+                            if (medAfter != null) {
+                                app.firestoreSyncRepository.uploadMedication(medId)
+
+                                val threshold = medAfter.lowStockThreshold
+                                if (threshold > 0 &&
+                                    (medAfter.stockCount == 0 ||
+                                            (stockBefore > threshold && medAfter.stockCount <= threshold))
+                                ) {
+                                    NotificationHelper.showLowStockAlert(context, medAfter)
+                                }
                             }
                         }
+                    } else {
+                        Log.d(TAG, "DoseEvent $doseEventId was not updated (rowsUpdated=$rowsUpdated), skipping stock deduction and sync")
                     }
                 } else {
                     Log.d(TAG, "DoseEvent $doseEventId is not PENDING (current=${doseEvent?.status}), ignoring action $action")

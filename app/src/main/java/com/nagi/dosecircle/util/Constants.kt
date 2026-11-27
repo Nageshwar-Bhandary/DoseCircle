@@ -6,4 +6,5 @@ object Constants {
     const val ACTION_TAKEN = "com.nagi.dosecircle.ACTION_TAKEN"
     const val ACTION_SKIP = "com.nagi.dosecircle.ACTION_SKIP"
     const val MISSED_GRACE_MINUTES = 30L
+    const val FOLLOWUP_MINUTES = 10L
 }
