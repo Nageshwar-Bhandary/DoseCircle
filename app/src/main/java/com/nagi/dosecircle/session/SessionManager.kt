@@ -7,6 +7,7 @@ import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
 import com.nagi.dosecircle.data.repository.RestoreRepository
 import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
+import com.nagi.dosecircle.notifications.fcm.FcmTokenManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -28,7 +29,8 @@ class SessionManager(
     private val restorePreferences: SharedPreferences,
     private val medicationRepository: MedicationRepository? = null,
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
+    private val fcmTokenManager: FcmTokenManager? = null
 ) {
     private val _currentPersonId = MutableStateFlow<Long?>(null)
     val currentPersonId: StateFlow<Long?> = _currentPersonId.asStateFlow()
@@ -65,6 +67,10 @@ class SessionManager(
                     if (firebaseAuth.currentUser?.uid != user.uid) {
                         return@withLock
                     }
+
+                    // Coordinated FCM token sync: initiated immediately after validating current user UID,
+                    // before local person creation or other session initialization.
+                    fcmTokenManager?.syncTokenForUser(user.uid)
 
                     val previousPersonId = _currentPersonId.value
 
@@ -129,9 +135,9 @@ class SessionManager(
                                 ) {
                                     restoredUid = user.uid
 
-                                    val persisted = restorePreferences?.edit()
-                                        ?.putString(KEY_RESTORED_UID, user.uid)
-                                        ?.commit() ?: false
+                                    val persisted = restorePreferences.edit()
+                                        .putString(KEY_RESTORED_UID, user.uid)
+                                        .commit()
 
                                     if (!persisted) {
                                         Log.w(

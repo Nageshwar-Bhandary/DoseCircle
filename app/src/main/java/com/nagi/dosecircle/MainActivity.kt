@@ -5,12 +5,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.launch
 import com.nagi.dosecircle.ui.screens.AddMedicationScreen
 import com.nagi.dosecircle.ui.screens.CaregiversScreen
 import com.nagi.dosecircle.ui.screens.CareForScreen
@@ -68,6 +70,7 @@ class MainActivity : ComponentActivity() {
                         val viewModel: MedicationListViewModel = viewModel(
                             factory = MedicationListViewModel.provideFactory(app)
                         )
+                        val coroutineScope = rememberCoroutineScope()
 
                         MedicationListScreen(
                             viewModel = viewModel,
@@ -78,13 +81,15 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("edit_medication/$medicationId")
                             },
                             onSignOut = {
-                                val logoutResult = app.authRepository.logout()
-                                if (logoutResult.isSuccess) {
-                                    navController.navigate("sign_in") {
-                                        popUpTo("medication_list") {
-                                            inclusive = true
+                                coroutineScope.launch {
+                                    val logoutResult = app.authRepository.logout()
+                                    if (logoutResult.isSuccess) {
+                                        navController.navigate("sign_in") {
+                                            popUpTo("medication_list") {
+                                                inclusive = true
+                                            }
+                                            launchSingleTop = true
                                         }
-                                        launchSingleTop = true
                                     }
                                 }
                             },
