@@ -23,6 +23,7 @@ import com.nagi.dosecircle.data.repository.MedicationRepository
 import com.nagi.dosecircle.data.repository.PatientViewRepository
 import com.nagi.dosecircle.data.repository.PersonRepository
 import com.nagi.dosecircle.data.repository.RestoreRepository
+import com.nagi.dosecircle.data.repository.SettingsRepository
 import com.nagi.dosecircle.notifications.alarm.AlarmScheduler
 import com.nagi.dosecircle.notifications.fcm.FcmTokenManager
 import com.nagi.dosecircle.notifications.network.CaregiverNotificationClient
@@ -220,6 +221,10 @@ class DoseCircleApp : Application() {
             "restore_session_prefs",
             Context.MODE_PRIVATE
         )
+    }
+
+    val settingsRepository: SettingsRepository by lazy {
+        SettingsRepository(this)
     }
 
     val sessionManager: SessionManager by lazy {

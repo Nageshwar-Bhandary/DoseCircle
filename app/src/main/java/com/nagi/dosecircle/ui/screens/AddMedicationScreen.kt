@@ -84,6 +84,7 @@ private val DAYS_OF_WEEK = listOf(
 fun AddMedicationScreen(
     viewModel: AddMedicationViewModel,
     onNavigateBack: () -> Unit,
+    seniorMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -346,7 +347,7 @@ fun AddMedicationScreen(
                 enabled = !state.isSaving,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(if (seniorMode) 56.dp else 50.dp)
             ) {
                 if (state.isSaving) {
                     CircularProgressIndicator(
