@@ -74,10 +74,6 @@ fun MedicationListScreen(
     onNavigateToAddMedication: () -> Unit,
     onNavigateToEditMedication: (Long) -> Unit,
     onSignOut: () -> Unit = {},
-    onNavigateToDashboard: () -> Unit,
-    onNavigateToHistory: () -> Unit = {},
-    onNavigateToCaregivers: () -> Unit = {},
-    onNavigateToCareFor: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -110,34 +106,6 @@ fun MedicationListScreen(
                     Text("My Medicines")
                 },
                 actions = {
-                    IconButton(onClick = onNavigateToDashboard) {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = "Today's Dashboard"
-                        )
-                    }
-
-                    IconButton(onClick = onNavigateToHistory) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_history),
-                            contentDescription = "Medication History"
-                        )
-                    }
-
-                    IconButton(onClick = onNavigateToCaregivers) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Caregivers"
-                        )
-                    }
-
-                    IconButton(onClick = onNavigateToCareFor) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = "People I Care For"
-                        )
-                    }
-
                     IconButton(
                         onClick = {
                             showSignOutDialog = true
