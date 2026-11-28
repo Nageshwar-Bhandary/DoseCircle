@@ -71,6 +71,14 @@ class StepTracker(
         registerSensorListener()
     }
 
+    /**
+     * Checks if the step counter sensor is available on this device.
+     */
+    fun hasStepSensor(): Boolean {
+        val sm = sensorManager ?: return false
+        return sm.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null
+    }
+
     private fun hasPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ContextCompat.checkSelfPermission(

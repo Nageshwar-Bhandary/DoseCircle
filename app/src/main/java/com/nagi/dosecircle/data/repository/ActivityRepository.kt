@@ -14,6 +14,14 @@ class ActivityRepository(private val dailyActivityDao: DailyActivityDao) {
         dailyActivityDao.updateSteps(id, steps)
     }
 
+    suspend fun updateGoal(id: Long, goal: Int) {
+        dailyActivityDao.updateGoal(id, goal)
+    }
+
+    fun getActivityFlowForDate(personId: Long, date: String): Flow<DailyActivity?> {
+        return dailyActivityDao.getActivityFlowForDate(personId, date)
+    }
+
     fun getActivitiesBetween(personId: Long, startDate: String, endDate: String): Flow<List<DailyActivity>> {
         return dailyActivityDao.getActivitiesBetween(personId, startDate, endDate)
     }
