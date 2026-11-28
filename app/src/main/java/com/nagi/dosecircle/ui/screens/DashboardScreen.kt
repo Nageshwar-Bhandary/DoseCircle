@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -77,6 +78,8 @@ private val PendingPastelBg = Color(0xFFFFF7ED)
 fun DashboardScreen(
     viewModel: DashboardViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToSettings: () -> Unit = {},
+    seniorMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -105,6 +108,19 @@ fun DashboardScreen(
                             contentDescription = "Back",
                             tint = Color(0xFF6554F0),
                             modifier = Modifier.size(20.dp)
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = onNavigateToSettings,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = Color(0xFF6554F0),
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 },
@@ -232,6 +248,7 @@ fun DashboardScreen(
                         ) { item ->
                             TodayDoseCard(
                                 item = item,
+                                seniorMode = seniorMode,
                                 onTaken = {
                                     viewModel.markDoseTaken(item.doseEvent.id)
                                 },
@@ -257,7 +274,10 @@ fun DashboardScreen(
                             items = uiState.upcomingDoses,
                             key = { item -> "upcoming_${item.scheduleTimeId}" }
                         ) { item ->
-                            UpcomingDoseCard(item = item)
+                            UpcomingDoseCard(
+                                item = item,
+                                seniorMode = seniorMode
+                            )
                         }
                     }
                 }
@@ -354,6 +374,7 @@ private fun SummaryCard(
 @Composable
 private fun TodayDoseCard(
     item: TodayDoseItem,
+    seniorMode: Boolean = false,
     onTaken: () -> Unit,
     onSkip: () -> Unit,
     modifier: Modifier = Modifier
@@ -369,7 +390,10 @@ private fun TodayDoseCard(
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 12.dp)
+                .padding(
+                    horizontal = if (seniorMode) 18.dp else 14.dp,
+                    vertical = if (seniorMode) 16.dp else 12.dp
+                )
                 .fillMaxWidth()
         ) {
             Row(
@@ -383,7 +407,7 @@ private fun TodayDoseCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(if (seniorMode) 42.dp else 34.dp)
                             .background(Color(0xFFE8E3FF), RoundedCornerShape(8.dp)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -391,7 +415,7 @@ private fun TodayDoseCard(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = null,
                             tint = Color(0xFF6554F0),
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(if (seniorMode) 22.dp else 18.dp)
                         )
                     }
 
@@ -431,55 +455,111 @@ private fun TodayDoseCard(
             }
 
             if (item.doseEvent.status == DoseStatus.PENDING) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = onSkip,
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, Color(0xFFD2CBF7)),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF6B6687)
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        modifier = Modifier.padding(end = 8.dp)
+                Spacer(modifier = Modifier.height(if (seniorMode) 12.dp else 8.dp))
+                if (seniorMode) {
+                    // Senior mode: full width, at least 56dp tall buttons
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            "Skip",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Button(
+                            onClick = onTaken,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF6554F0)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Taken",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = onSkip,
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.5.dp, Color(0xFFD2CBF7)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFF6B6687)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Skip",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
-                    Button(
-                        onClick = onTaken,
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6554F0)
-                        ),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            "Taken",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                        OutlinedButton(
+                            onClick = onSkip,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, Color(0xFFD2CBF7)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFF6B6687)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "Skip",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Button(
+                            onClick = onTaken,
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF6554F0)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "Taken",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -490,6 +570,7 @@ private fun TodayDoseCard(
 @Composable
 private fun UpcomingDoseCard(
     item: UpcomingDoseItem,
+    seniorMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -503,7 +584,10 @@ private fun UpcomingDoseCard(
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .padding(
+                    horizontal = if (seniorMode) 18.dp else 14.dp,
+                    vertical = if (seniorMode) 14.dp else 10.dp
+                )
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically

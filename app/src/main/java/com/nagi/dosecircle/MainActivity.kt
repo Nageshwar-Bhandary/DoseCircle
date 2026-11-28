@@ -26,12 +26,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -49,6 +53,7 @@ import com.nagi.dosecircle.ui.screens.FamilyScreen
 import com.nagi.dosecircle.ui.screens.HistoryScreen
 import com.nagi.dosecircle.ui.screens.MedicationListScreen
 import com.nagi.dosecircle.ui.screens.PatientDashboardScreen
+import com.nagi.dosecircle.ui.screens.SettingsScreen
 import com.nagi.dosecircle.ui.screens.SignInScreen
 import com.nagi.dosecircle.ui.theme.DoseCircleTheme
 import com.nagi.dosecircle.viewmodel.AddMedicationViewModel
@@ -79,261 +84,291 @@ class MainActivity : ComponentActivity() {
         val app = application as DoseCircleApp
 
         setContent {
-            DoseCircleTheme {
-                val navController = rememberNavController()
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
+            val seniorMode by app.settingsRepository.seniorMode.collectAsState()
+            val currentDensity = LocalDensity.current
+            val targetDensity = if (seniorMode) {
+                Density(
+                    density = currentDensity.density,
+                    fontScale = maxOf(currentDensity.fontScale, 1.3f)
+                )
+            } else {
+                currentDensity
+            }
 
-                val topLevelRoutes = listOf("dashboard", "medication_list", "history", "family")
-                val showBottomBar = currentRoute in topLevelRoutes
+            CompositionLocalProvider(LocalDensity provides targetDensity) {
+                DoseCircleTheme {
+                    val navController = rememberNavController()
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentRoute = navBackStackEntry?.destination?.route
 
-                val startDestination =
-                    if (app.authRepository.currentUser != null) {
-                        "dashboard"
-                    } else {
-                        "sign_in"
-                    }
+                    val topLevelRoutes = listOf("dashboard", "medication_list", "history", "family")
+                    val showBottomBar = currentRoute in topLevelRoutes
 
-                Scaffold(
-                    bottomBar = {
-                        if (showBottomBar) {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .navigationBarsPadding(),
-                                color = Color.White.copy(alpha = 0.95f),
-                                border = BorderStroke(1.dp, Color(0xFFE4DFFC)),
-                                shadowElevation = 8.dp
-                            ) {
-                                NavigationBar(
-                                    containerColor = Color.Transparent,
-                                    tonalElevation = 0.dp
+                    val startDestination =
+                        if (app.authRepository.currentUser != null) {
+                            "dashboard"
+                        } else {
+                            "sign_in"
+                        }
+
+                    Scaffold(
+                        bottomBar = {
+                            if (showBottomBar) {
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .navigationBarsPadding(),
+                                    color = Color.White.copy(alpha = 0.95f),
+                                    border = BorderStroke(1.dp, Color(0xFFE4DFFC)),
+                                    shadowElevation = 8.dp
                                 ) {
-                                    val items = listOf(
-                                        BottomNavItem.Today,
-                                        BottomNavItem.Medicines,
-                                        BottomNavItem.History,
-                                        BottomNavItem.Family
-                                    )
-                                    items.forEach { item ->
-                                        val isSelected = currentRoute == item.route
-                                        NavigationBarItem(
-                                            selected = isSelected,
-                                            onClick = {
-                                                if (currentRoute != item.route) {
-                                                    navController.navigate(item.route) {
-                                                        popUpTo(navController.graph.findStartDestination().id) {
-                                                            saveState = true
-                                                        }
-                                                        launchSingleTop = true
-                                                        restoreState = true
-                                                    }
-                                                }
-                                            },
-                                            icon = {
-                                                when (item) {
-                                                    BottomNavItem.Today -> Icon(
-                                                        imageVector = Icons.Default.Home,
-                                                        contentDescription = item.label
-                                                    )
-                                                    BottomNavItem.Medicines -> Icon(
-                                                        painter = painterResource(id = R.drawable.ic_medication),
-                                                        contentDescription = item.label
-                                                    )
-                                                    BottomNavItem.History -> Icon(
-                                                        painter = painterResource(id = R.drawable.ic_history),
-                                                        contentDescription = item.label
-                                                    )
-                                                    BottomNavItem.Family -> Icon(
-                                                        imageVector = Icons.Default.Person,
-                                                        contentDescription = item.label
-                                                    )
-                                                }
-                                            },
-                                            label = { Text(item.label) },
-                                            colors = NavigationBarItemDefaults.colors(
-                                                selectedIconColor = Color(0xFF6554F0),
-                                                selectedTextColor = Color(0xFF6554F0),
-                                                indicatorColor = Color(0xFFE8E3FF),
-                                                unselectedIconColor = Color(0xFF8175C9),
-                                                unselectedTextColor = Color(0xFF8175C9)
-                                            )
+                                    NavigationBar(
+                                        containerColor = Color.Transparent,
+                                        tonalElevation = 0.dp
+                                    ) {
+                                        val items = listOf(
+                                            BottomNavItem.Today,
+                                            BottomNavItem.Medicines,
+                                            BottomNavItem.History,
+                                            BottomNavItem.Family
                                         )
+                                        items.forEach { item ->
+                                            val isSelected = currentRoute == item.route
+                                            NavigationBarItem(
+                                                selected = isSelected,
+                                                alwaysShowLabel = true,
+                                                onClick = {
+                                                    if (currentRoute != item.route) {
+                                                        navController.navigate(item.route) {
+                                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                                saveState = true
+                                                            }
+                                                            launchSingleTop = true
+                                                            restoreState = true
+                                                        }
+                                                    }
+                                                },
+                                                icon = {
+                                                    when (item) {
+                                                        BottomNavItem.Today -> Icon(
+                                                            imageVector = Icons.Default.Home,
+                                                            contentDescription = item.label
+                                                        )
+                                                        BottomNavItem.Medicines -> Icon(
+                                                            painter = painterResource(id = R.drawable.ic_medication),
+                                                            contentDescription = item.label
+                                                        )
+                                                        BottomNavItem.History -> Icon(
+                                                            painter = painterResource(id = R.drawable.ic_history),
+                                                            contentDescription = item.label
+                                                        )
+                                                        BottomNavItem.Family -> Icon(
+                                                            imageVector = Icons.Default.Person,
+                                                            contentDescription = item.label
+                                                        )
+                                                    }
+                                                },
+                                                label = { Text(item.label) },
+                                                colors = NavigationBarItemDefaults.colors(
+                                                    selectedIconColor = Color(0xFF6554F0),
+                                                    selectedTextColor = Color(0xFF6554F0),
+                                                    indicatorColor = Color(0xFFE8E3FF),
+                                                    unselectedIconColor = Color(0xFF8175C9),
+                                                    unselectedTextColor = Color(0xFF8175C9)
+                                                )
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                ) { innerPadding ->
-                    NavHost(
-                        navController = navController,
-                        startDestination = startDestination,
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        composable("sign_in") {
-                            SignInScreen(
-                                onAuthenticated = {
-                                    navController.navigate("dashboard") {
-                                        popUpTo("sign_in") {
-                                            inclusive = true
+                    ) { innerPadding ->
+                        NavHost(
+                            navController = navController,
+                            startDestination = startDestination,
+                            modifier = Modifier.padding(innerPadding)
+                        ) {
+                            composable("sign_in") {
+                                SignInScreen(
+                                    onAuthenticated = {
+                                        navController.navigate("dashboard") {
+                                            popUpTo("sign_in") {
+                                                inclusive = true
+                                            }
+                                            launchSingleTop = true
                                         }
-                                        launchSingleTop = true
                                     }
-                                }
-                            )
-                        }
+                                )
+                            }
 
-                        composable("dashboard") {
-                            val viewModel: DashboardViewModel = viewModel(
-                                factory = DashboardViewModel.provideFactory(app)
-                            )
+                            composable("dashboard") {
+                                val viewModel: DashboardViewModel = viewModel(
+                                    factory = DashboardViewModel.provideFactory(app)
+                                )
 
-                            DashboardScreen(
-                                viewModel = viewModel,
-                                onNavigateBack = {
-                                    finish()
-                                }
-                            )
-                        }
+                                DashboardScreen(
+                                    viewModel = viewModel,
+                                    seniorMode = seniorMode,
+                                    onNavigateBack = {
+                                        finish()
+                                    },
+                                    onNavigateToSettings = {
+                                        navController.navigate("settings")
+                                    }
+                                )
+                            }
 
-                        composable("medication_list") {
-                            val viewModel: MedicationListViewModel = viewModel(
-                                factory = MedicationListViewModel.provideFactory(app)
-                            )
-                            val coroutineScope = rememberCoroutineScope()
+                            composable("settings") {
+                                SettingsScreen(
+                                    settingsRepository = app.settingsRepository,
+                                    onNavigateBack = {
+                                        navController.popBackStack()
+                                    }
+                                )
+                            }
 
-                            MedicationListScreen(
-                                viewModel = viewModel,
-                                onNavigateToAddMedication = {
-                                    navController.navigate("add_medication")
-                                },
-                                onNavigateToEditMedication = { medicationId ->
-                                    navController.navigate("edit_medication/$medicationId")
-                                },
-                                onSignOut = {
-                                    coroutineScope.launch {
-                                        val logoutResult = app.authRepository.logout()
-                                        if (logoutResult.isSuccess) {
-                                            navController.navigate("sign_in") {
-                                                popUpTo(0) {
-                                                    inclusive = true
+                            composable("medication_list") {
+                                val viewModel: MedicationListViewModel = viewModel(
+                                    factory = MedicationListViewModel.provideFactory(app)
+                                )
+                                val coroutineScope = rememberCoroutineScope()
+
+                                MedicationListScreen(
+                                    viewModel = viewModel,
+                                    seniorMode = seniorMode,
+                                    onNavigateToAddMedication = {
+                                        navController.navigate("add_medication")
+                                    },
+                                    onNavigateToEditMedication = { medicationId ->
+                                        navController.navigate("edit_medication/$medicationId")
+                                    },
+                                    onSignOut = {
+                                        coroutineScope.launch {
+                                            val logoutResult = app.authRepository.logout()
+                                            if (logoutResult.isSuccess) {
+                                                navController.navigate("sign_in") {
+                                                    popUpTo(0) {
+                                                        inclusive = true
+                                                    }
+                                                    launchSingleTop = true
                                                 }
-                                                launchSingleTop = true
                                             }
                                         }
                                     }
-                                }
-                            )
-                        }
-
-                        composable("history") {
-                            val viewModel: HistoryViewModel = viewModel(
-                                factory = HistoryViewModel.provideFactory(app)
-                            )
-
-                            HistoryScreen(
-                                viewModel = viewModel,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                }
-                            )
-                        }
-
-                        composable("family") {
-                            FamilyScreen(
-                                onNavigateToCaregivers = {
-                                    navController.navigate("caregivers")
-                                },
-                                onNavigateToCareFor = {
-                                    navController.navigate("care_for")
-                                }
-                            )
-                        }
-
-                        composable("caregivers") {
-                            val viewModel: CaregiverViewModel = viewModel(
-                                factory = CaregiverViewModel.provideFactory(app)
-                            )
-
-                            CaregiversScreen(
-                                viewModel = viewModel,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                }
-                            )
-                        }
-
-                        composable("care_for") {
-                            val viewModel: CareForViewModel = viewModel(
-                                factory = CareForViewModel.provideFactory(app)
-                            )
-
-                            CareForScreen(
-                                viewModel = viewModel,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                },
-                                onOpenPatientDashboard = { patientUid ->
-                                    navController.navigate("patient_dashboard/$patientUid")
-                                }
-                            )
-                        }
-
-                        composable(
-                            route = "patient_dashboard/{patientUid}",
-                            arguments = listOf(navArgument("patientUid") { type = NavType.StringType })
-                        ) { backStackEntry ->
-                            val patientUid = backStackEntry.arguments?.getString("patientUid") ?: ""
-                            val viewModel: PatientDashboardViewModel = viewModel(
-                                factory = PatientDashboardViewModel.provideFactory(app, patientUid)
-                            )
-
-                            PatientDashboardScreen(
-                                viewModel = viewModel,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                }
-                            )
-                        }
-
-                        composable("add_medication") {
-                            val viewModel: AddMedicationViewModel = viewModel(
-                                factory = AddMedicationViewModel.provideFactory(app)
-                            )
-
-                            AddMedicationScreen(
-                                viewModel = viewModel,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                }
-                            )
-                        }
-
-                        composable(
-                            route = "edit_medication/{medicationId}",
-                            arguments = listOf(
-                                navArgument("medicationId") {
-                                    type = NavType.LongType
-                                }
-                            )
-                        ) { backStackEntry ->
-                            val medicationId =
-                                backStackEntry.arguments?.getLong("medicationId")
-
-                            val viewModel: AddMedicationViewModel = viewModel(
-                                key = "edit_medication_$medicationId",
-                                factory = AddMedicationViewModel.provideFactory(
-                                    app,
-                                    medicationId
                                 )
-                            )
+                            }
 
-                            AddMedicationScreen(
-                                viewModel = viewModel,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                }
-                            )
+                            composable("history") {
+                                val viewModel: HistoryViewModel = viewModel(
+                                    factory = HistoryViewModel.provideFactory(app)
+                                )
+
+                                HistoryScreen(
+                                    viewModel = viewModel,
+                                    onNavigateBack = {
+                                        navController.popBackStack()
+                                    }
+                                )
+                            }
+
+                            composable("family") {
+                                FamilyScreen(
+                                    onNavigateToCaregivers = {
+                                        navController.navigate("caregivers")
+                                    },
+                                    onNavigateToCareFor = {
+                                        navController.navigate("care_for")
+                                    }
+                                )
+                            }
+
+                            composable("caregivers") {
+                                val viewModel: CaregiverViewModel = viewModel(
+                                    factory = CaregiverViewModel.provideFactory(app)
+                                )
+
+                                CaregiversScreen(
+                                    viewModel = viewModel,
+                                    onNavigateBack = {
+                                        navController.popBackStack()
+                                    }
+                                )
+                            }
+
+                            composable("care_for") {
+                                val viewModel: CareForViewModel = viewModel(
+                                    factory = CareForViewModel.provideFactory(app)
+                                )
+
+                                CareForScreen(
+                                    viewModel = viewModel,
+                                    onNavigateBack = {
+                                        navController.popBackStack()
+                                    },
+                                    onOpenPatientDashboard = { patientUid ->
+                                        navController.navigate("patient_dashboard/$patientUid")
+                                    }
+                                )
+                            }
+
+                            composable(
+                                route = "patient_dashboard/{patientUid}",
+                                arguments = listOf(navArgument("patientUid") { type = NavType.StringType })
+                            ) { backStackEntry ->
+                                val patientUid = backStackEntry.arguments?.getString("patientUid") ?: ""
+                                val viewModel: PatientDashboardViewModel = viewModel(
+                                    factory = PatientDashboardViewModel.provideFactory(app, patientUid)
+                                )
+
+                                PatientDashboardScreen(
+                                    viewModel = viewModel,
+                                    onNavigateBack = {
+                                        navController.popBackStack()
+                                    }
+                                )
+                            }
+
+                            composable("add_medication") {
+                                val viewModel: AddMedicationViewModel = viewModel(
+                                    factory = AddMedicationViewModel.provideFactory(app)
+                                )
+
+                                AddMedicationScreen(
+                                    viewModel = viewModel,
+                                    seniorMode = seniorMode,
+                                    onNavigateBack = {
+                                        navController.popBackStack()
+                                    }
+                                )
+                            }
+
+                            composable(
+                                route = "edit_medication/{medicationId}",
+                                arguments = listOf(
+                                    navArgument("medicationId") {
+                                        type = NavType.LongType
+                                    }
+                                )
+                            ) { backStackEntry ->
+                                val medicationId =
+                                    backStackEntry.arguments?.getLong("medicationId")
+
+                                val viewModel: AddMedicationViewModel = viewModel(
+                                    key = "edit_medication_$medicationId",
+                                    factory = AddMedicationViewModel.provideFactory(
+                                        app,
+                                        medicationId
+                                    )
+                                )
+
+                                AddMedicationScreen(
+                                    viewModel = viewModel,
+                                    seniorMode = seniorMode,
+                                    onNavigateBack = {
+                                        navController.popBackStack()
+                                    }
+                                )
+                            }
                         }
                     }
                 }
