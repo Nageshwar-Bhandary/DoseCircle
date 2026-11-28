@@ -1,6 +1,6 @@
-
 package com.nagi.dosecircle.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,12 +12,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -28,22 +34,43 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 import com.nagi.dosecircle.data.entity.DoseStatus
 import com.nagi.dosecircle.viewmodel.DashboardViewModel
 import com.nagi.dosecircle.viewmodel.TodayDoseItem
 import com.nagi.dosecircle.viewmodel.UpcomingDoseItem
+
+// Glassmorphism pastel colors
+private val GlassSurface = Color(0xFFFFFFFF).copy(alpha = 0.85f)
+private val GlassBorder = Color(0xFFFFFFFF).copy(alpha = 0.65f)
+private val GlassCardBorder = Color(0xFFE4DFFC)
+
+private val TakenPastel = Color(0xFF2E9F63)
+private val TakenPastelBg = Color(0xFFE8F7ED)
+
+private val SkippedPastel = Color(0xFF7B8794)
+private val SkippedPastelBg = Color(0xFFF0F4F8)
+
+private val MissedPastel = Color(0xFFE05368)
+private val MissedPastelBg = Color(0xFFFFECEF)
+
+private val PendingPastel = Color(0xFFD97706)
+private val PendingPastelBg = Color(0xFFFFF7ED)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,56 +80,129 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val displayName = remember {
+        FirebaseAuth.getInstance().currentUser?.displayName?.trim()
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Today's Doses")
+                    Text(
+                        text = "Today's Schedule",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF24213A)
+                    )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier.size(36.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = Color(0xFF6554F0),
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = Color.Transparent
                 )
             )
         },
+        containerColor = Color(0xFFF1EEFF),
         modifier = modifier
     ) { innerPadding ->
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(
+                    start = innerPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+                    end = innerPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = innerPadding.calculateBottomPadding()
+                )
         ) {
+            // Compact Greeting Section
+            if (!displayName.isNullOrBlank()) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "Hi, $displayName",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF24213A),
+                        letterSpacing = (-0.3).sp
+                    )
+                    Text(
+                        text = "Here is your medication plan for today",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF6B6687)
+                    )
+                }
+            }
+
+            // Compact Summary Stats Grid
             SummaryRow(
                 takenCount = uiState.takenCount,
                 skippedCount = uiState.skippedCount,
                 missedCount = uiState.missedCount,
                 pendingCount = uiState.pendingCount,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
             if (uiState.todayDoses.isEmpty() && uiState.upcomingDoses.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(24.dp),
+                        .padding(20.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "No doses scheduled today.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(0.9f),
+                        shape = RoundedCornerShape(16.dp),
+                        color = GlassSurface,
+                        border = BorderStroke(1.dp, GlassBorder),
+                        shadowElevation = 2.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(Color(0xFFE8E3FF), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DateRange,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6554F0),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "All Clear!",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF24213A)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "No doses scheduled for today.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF6B6687),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
                 }
             } else {
                 LazyColumn(
@@ -110,20 +210,19 @@ fun DashboardScreen(
                     contentPadding = PaddingValues(
                         start = 16.dp,
                         end = 16.dp,
-                        bottom = 24.dp
+                        top = 2.dp,
+                        bottom = 12.dp
                     ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (uiState.todayDoses.isNotEmpty()) {
                         item(key = "today_header") {
                             Text(
-                                text = "Today's doses",
-                                style = MaterialTheme.typography.titleMedium,
+                                text = "Today's Doses",
+                                style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(
-                                    top = 8.dp,
-                                    bottom = 4.dp
-                                )
+                                color = Color(0xFF24213A),
+                                modifier = Modifier.padding(start = 2.dp, top = 4.dp, bottom = 2.dp)
                             )
                         }
 
@@ -147,12 +246,10 @@ fun DashboardScreen(
                         item(key = "upcoming_header") {
                             Text(
                                 text = "Upcoming",
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(
-                                    top = 16.dp,
-                                    bottom = 4.dp
-                                )
+                                color = Color(0xFF24213A),
+                                modifier = Modifier.padding(start = 2.dp, top = 6.dp, bottom = 2.dp)
                             )
                         }
 
@@ -184,25 +281,33 @@ private fun SummaryRow(
         SummaryCard(
             label = "Taken",
             count = takenCount,
-            color = Color(0xFF4CAF50),
-            modifier = Modifier.weight(1f)
-        )
-        SummaryCard(
-            label = "Skipped",
-            count = skippedCount,
-            color = Color(0xFF9E9E9E),
-            modifier = Modifier.weight(1f)
-        )
-        SummaryCard(
-            label = "Missed",
-            count = missedCount,
-            color = Color(0xFFF44336),
+            textColor = TakenPastel,
+            bgColor = TakenPastelBg,
+            borderColor = Color(0xFFB7E4C7),
             modifier = Modifier.weight(1f)
         )
         SummaryCard(
             label = "Pending",
             count = pendingCount,
-            color = Color(0xFFFF9800),
+            textColor = PendingPastel,
+            bgColor = PendingPastelBg,
+            borderColor = Color(0xFFFDE68A),
+            modifier = Modifier.weight(1f)
+        )
+        SummaryCard(
+            label = "Missed",
+            count = missedCount,
+            textColor = MissedPastel,
+            bgColor = MissedPastelBg,
+            borderColor = Color(0xFFFECDD3),
+            modifier = Modifier.weight(1f)
+        )
+        SummaryCard(
+            label = "Skipped",
+            count = skippedCount,
+            textColor = SkippedPastel,
+            bgColor = SkippedPastelBg,
+            borderColor = Color(0xFFE2E8F0),
             modifier = Modifier.weight(1f)
         )
     }
@@ -212,33 +317,35 @@ private fun SummaryRow(
 private fun SummaryCard(
     label: String,
     count: Int,
-    color: Color,
+    textColor: Color,
+    bgColor: Color,
+    borderColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Surface(
         modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = 0.15f)
-        ),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(12.dp),
+        color = bgColor.copy(alpha = 0.90f),
+        border = BorderStroke(1.dp, borderColor.copy(alpha = 0.8f)),
+        shadowElevation = 1.dp
     ) {
         Column(
             modifier = Modifier
-                .padding(vertical = 12.dp, horizontal = 4.dp)
+                .padding(vertical = 6.dp, horizontal = 2.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = count.toString(),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = color
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = textColor
             )
-            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                fontWeight = FontWeight.SemiBold,
+                color = textColor.copy(alpha = 0.85f)
             )
         }
     }
@@ -253,14 +360,16 @@ private fun TodayDoseCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = Color.White
+        ),
+        border = BorderStroke(1.dp, GlassCardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp)
     ) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(horizontal = 14.dp, vertical = 12.dp)
                 .fillMaxWidth()
         ) {
             Row(
@@ -268,52 +377,109 @@ private fun TodayDoseCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.medicationName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    if (item.dosage.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = item.dosage,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .background(Color(0xFFE8E3FF), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = Color(0xFF6554F0),
+                            modifier = Modifier.size(18.dp)
                         )
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column {
+                        Text(
+                            text = item.medicationName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF24213A)
+                        )
+                        if (item.dosage.isNotBlank()) {
+                            Text(
+                                text = item.dosage,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF6B6687)
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 StatusChip(status = item.doseEvent.status)
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-                text = "Scheduled: ${item.timeFormatted}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Scheduled: ${item.timeFormatted}",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF8175C9)
+                )
+            }
 
             if (item.doseEvent.status == DoseStatus.PENDING) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedButton(
                         onClick = onSkip,
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFD2CBF7)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF6B6687)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
-                        Text("Skip")
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Skip",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                     Button(
                         onClick = onTaken,
+                        shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF4CAF50)
-                        )
+                            containerColor = Color(0xFF6554F0)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
                     ) {
-                        Text("Taken", color = Color.White)
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Taken",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -328,14 +494,16 @@ private fun UpcomingDoseCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = Color.White.copy(alpha = 0.85f)
+        ),
+        border = BorderStroke(1.dp, GlassCardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -344,70 +512,76 @@ private fun UpcomingDoseCard(
                 Text(
                     text = item.medicationName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF24213A)
                 )
                 if (item.dosage.isNotBlank()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = item.dosage,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF6B6687)
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Scheduled: ${item.timeFormatted}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color(0xFF8175C9),
+                    fontWeight = FontWeight.Medium
                 )
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            Box(
-                modifier = Modifier
-                    .background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFE8E3FF),
+                border = BorderStroke(1.dp, Color(0xFFD2CBF7))
             ) {
                 Text(
                     text = "Upcoming",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = Color(0xFF6554F0),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                 )
             }
         }
     }
 }
 
+private data class StatusChipStyle(
+    val textColor: Color,
+    val bgColor: Color,
+    val borderColor: Color,
+    val label: String
+)
+
 @Composable
 private fun StatusChip(
     status: DoseStatus,
     modifier: Modifier = Modifier
 ) {
-    val (chipColor, label) = when (status) {
-        DoseStatus.TAKEN -> Color(0xFF4CAF50) to "Taken"
-        DoseStatus.SKIPPED -> Color(0xFF9E9E9E) to "Skipped"
-        DoseStatus.MISSED -> Color(0xFFF44336) to "Missed"
-        DoseStatus.PENDING -> Color(0xFFFF9800) to "Pending"
+    val style = when (status) {
+        DoseStatus.TAKEN -> StatusChipStyle(TakenPastel, TakenPastelBg, Color(0xFFB7E4C7), "Taken")
+        DoseStatus.SKIPPED -> StatusChipStyle(SkippedPastel, SkippedPastelBg, Color(0xFFE2E8F0), "Skipped")
+        DoseStatus.MISSED -> StatusChipStyle(MissedPastel, MissedPastelBg, Color(0xFFFECDD3), "Missed")
+        DoseStatus.PENDING -> StatusChipStyle(PendingPastel, PendingPastelBg, Color(0xFFFDE68A), "Pending")
     }
 
-    Box(
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = style.bgColor,
+        border = BorderStroke(1.dp, style.borderColor),
         modifier = modifier
-            .background(
-                color = chipColor.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Text(
-            text = label,
+            text = style.label,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = chipColor
+            color = style.textColor,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
         )
     }
 }
