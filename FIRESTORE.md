@@ -24,6 +24,11 @@
 
 ## 3. Security Rules
 
+> **Note on Security Rules Management**:
+> - Firebase Console is the source of truth for published rules.
+> - The root `firestore.rules` file is the version-controlled copy.
+> - Whenever rules change in Firebase Console, this file must also be updated.
+
 - Users can access their own data.
 - Linked caregivers can read the patient's data.
 - Only the patient can modify their medication and dose event data.
