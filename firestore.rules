@@ -1,0 +1,91 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isCaregiverOf(patientUid) {
+      let linkPath = /databases/$(database)/documents/links/$(patientUid + '_' + request.auth.uid);
+      return signedIn() && exists(linkPath) && get(linkPath).data.status == 'active';
+    }
+
+    function codePath(code) {
+      return /databases/$(database)/documents/inviteCodes/$(code);
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() &&
+        (request.auth.uid == uid || isCaregiverOf(uid));
+
+      allow write: if signedIn() && request.auth.uid == uid;
+
+      match /medications/{id} {
+        allow read: if signedIn() &&
+          (request.auth.uid == uid || isCaregiverOf(uid));
+
+        allow write: if signedIn() && request.auth.uid == uid;
+      }
+
+      match /doseEvents/{id} {
+        allow read: if signedIn() &&
+          (request.auth.uid == uid || isCaregiverOf(uid));
+
+        allow write: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    match /inviteCodes/{code} {
+      allow get: if signedIn() && resource.data.expiresAt > request.time;
+      allow list: if false;
+
+      allow create: if signedIn()
+        && request.resource.data.patientUid == request.auth.uid
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(1, 'd');
+
+      allow update: if false;
+
+      allow delete: if signedIn() &&
+        resource.data.patientUid == request.auth.uid;
+    }
+
+    match /links/{linkId} {
+
+      // Allow participants to check a link document, even if it doesn't exist.
+      allow get: if signedIn() && (
+        linkId.split('_')[0] == request.auth.uid ||
+        linkId.split('_')[1] == request.auth.uid
+      );
+
+      // Allow users to query their own links.
+      allow list: if signedIn() &&
+        (resource.data.patientUid == request.auth.uid ||
+         resource.data.caregiverUid == request.auth.uid);
+
+      // Caregiver creates a pending link request.
+      allow create: if signedIn()
+        && request.resource.data.caregiverUid == request.auth.uid
+        && request.resource.data.patientUid != request.auth.uid
+        && linkId == request.resource.data.patientUid + '_' + request.auth.uid
+        && request.resource.data.status == 'pending'
+        && exists(codePath(request.resource.data.code))
+        && get(codePath(request.resource.data.code)).data.patientUid == request.resource.data.patientUid
+        && get(codePath(request.resource.data.code)).data.expiresAt > request.time;
+
+      // Patient approves a pending request.
+      allow update: if signedIn()
+        && resource.data.patientUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'active';
+
+      // Either participant can leave or remove the link.
+      allow delete: if signedIn() &&
+        (resource.data.patientUid == request.auth.uid ||
+         resource.data.caregiverUid == request.auth.uid);
+    }
+  }
+}
