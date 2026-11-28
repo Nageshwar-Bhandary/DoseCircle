@@ -220,7 +220,9 @@ npm test
 ## 7. Known Limitations & Operating Constraints
 
 - **Exact Alarms & Permissions**:
-  - Android 12+ (API 31+) requires the `SCHEDULE_EXACT_ALARM` or `USE_EXACT_ALARM` permission to trigger alarms at precise times. Users must ensure this permission is granted in system settings.
+  - Android 12+ (API 31+) and Android 14+ (API 34+) require exact alarm permissions (`SCHEDULE_EXACT_ALARM` or `USE_EXACT_ALARM`) to fire medication reminder alarms at exact clock times.
+  - When exact alarm permission is unavailable or denied, DoseCircle gracefully falls back to inexact alarms via `AlarmManager.setAndAllowWhileIdle()` and displays a small dismissible banner on the Today screen directing the user to system settings.
+  - **Google Play Policy on `USE_EXACT_ALARM`**: Under Google Play policies, `USE_EXACT_ALARM` is restricted to qualifying alarm clock and calendar applications; Google Play may reject apps that declare this permission without meeting specific core-use criteria. Because DoseCircle is distributed directly via APK builds rather than the Google Play Store, declaring `USE_EXACT_ALARM` (alongside `SCHEDULE_EXACT_ALARM` with `maxSdkVersion="32"`) ensures reliable exact alarm scheduling across modern Android versions without requiring manual user toggling in settings on supported builds.
   - Android 13+ (API 33+) requires runtime `POST_NOTIFICATIONS` permission to show heads-up alerts and caregiver notification banners.
 - **Battery Optimization & OEM Restrictions**:
   - Device manufacturers with customized Android flavors (such as realme / ColorOS, Xiaomi / MIUI / HyperOS, OnePlus / OxygenOS, Huawei / EMUI) aggressively restrict background tasks.
