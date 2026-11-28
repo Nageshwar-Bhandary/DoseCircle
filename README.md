@@ -27,34 +27,31 @@ DoseCircle bridges the gap between patient medication adherence and caregiver pe
 ## 2. Features
 
 ### Completed Features
-- [x] **Medicine Management**: Add, edit, view, and delete medications with dosage, instructions, photo attachment, and stock counts.
-- [x] **Alarm & Reminder Engine**: Exact alarms using Android `AlarmManager` with fullscreen reminder alerts, customizable reminder times, and follow-up alerts for unacknowledged doses.
-- [x] **Dose Event Tracking**: Track taken, skipped, and missed medication events with exact timestamps.
-- [x] **Medication History**: Comprehensive audit log of past dose actions filterable by date and status.
-- [x] **Stock Management & Refill Warnings**: Automatic stock decrement on taken doses and proactive low-stock warnings when medicine counts fall below configured thresholds.
-- [x] **Multi-Profile Support**: Local profile management (`persons` table) allowing multiple individuals to manage schedules independently on a single device.
-- [x] **Cloud Sync & Account Restore**: Automatic background synchronization of profiles, medications, and dose events to Google Cloud Firestore, with full profile and data restore upon sign-in.
-- [x] **Caregiver Account Linking**: Secure invite code generation with 10-minute Firestore Timestamp expiry, pending link creation, and patient approval flow.
+- [x] **Bottom Navigation & Today Home Screen**: Persistent bottom navigation bar across main app sections with a comprehensive Today schedule view, summary metrics, and reminder shortcuts.
+- [x] **Senior Mode**: High-contrast, accessible UI mode with enlarged typography, increased touch target padding, and prominent action buttons for elderly users.
+- [x] **Follow-Up Reminders**: Fullscreen alerts and follow-up reminders for unacknowledged doses to ensure timely medication adherence.
+- [x] **Refill Alerts & Stock Management**: Proactive low-stock warnings when medicine counts fall below configured thresholds and automatic stock decrements on taken doses.
+- [x] **Medicine History**: Comprehensive audit log of past dose actions (taken, skipped, missed) filterable by date and status.
 - [x] **Caregiver Dashboard**: Real-time caregiver monitoring interface displaying patient adherence, active schedules, and recent dose events.
-- [x] **Missed-Dose Caregiver Notification Subsystem**:
-  - Cloudflare Worker serverless dispatcher (`dosecircle-notify`) validating Firebase ID tokens and communicating with FCM HTTP v1 using Google OAuth assertion grant (RFC 7523).
-  - Server-side atomic delivery lease and duplicate suppression in top-level `notifyDeliveries` collection.
-  - 6-hour stale-dose cutoff protecting caregivers from historical alert storms during backup restores.
-  - Client-side persistent deduplication via `SharedPreferences` in `DoseCircleMessagingService`.
-  - Android retry sync via WorkManager (`MissedDoseNotificationRetryWorker`) with exponential backoff for transient network interruptions.
+- [x] **Missed-Dose Push Notifications to Caregivers**: Automated high-priority push notifications dispatched to linked caregivers via serverless Cloudflare Worker (`dosecircle-notify`) and FCM HTTP v1 when a dose is missed.
+- [x] **Restore on a New Phone**: Automatic cloud synchronization of profiles, medications, and dose events to Google Cloud Firestore, with full profile and data restore upon sign-in.
+- [x] **Exact-Alarm Fallback for Android 12 and Above**: Reliable medication reminder scheduling using `AlarmManager` with graceful fallback to `setAndAllowWhileIdle()` when exact alarm access is unavailable, accompanied by a dismissible warning banner on the Today screen directing users to system settings.
+- [x] **Medicine Management**: Add, edit, view, and delete medications with dosage, instructions, photo attachment, and stock counts.
+- [x] **Multi-Profile Support**: Local profile management (`persons` table) allowing multiple individuals to manage schedules independently on a single device.
+- [x] **Caregiver Account Linking**: Secure invite code generation with 10-minute Firestore Timestamp expiry, pending link creation, and patient approval flow.
 - [x] **Authentication**:
   - Email & Password sign-up and sign-in with Firebase Authentication.
   - Google Sign-In using Android Credential Manager (`GoogleAuthClient`).
   - Password reset via Firebase Authentication.
-- [x] **Bottom Navigation**: Persistent bottom navigation bar across main app sections.
+
+### Pending Real-Device Testing
+- **Activity Screen (PR #20)**: Dedicated UI screen displaying daily activity, hardware step counter tracking (`SensorManager`), and step goals. Implementation is submitted in PR #20 and is awaiting real-device hardware verification before merging into `main`.
 
 ### Optional & Planned Features
-- [ ] **Activity Screen**: Dedicated UI screen displaying daily activity, pedometer tracking, and step progress.
-- [ ] **Senior Mode**: High-contrast, simplified UI with enlarged touch targets and streamlined navigation for elderly users.
-- [ ] **App Theme**: Comprehensive dynamic color theming, healthcare-specific palettes, and dark mode customization.
 - [ ] **Prescription OCR via ML Kit**: Automatic extraction of medication name, dosage, and frequency from prescription images.
 - [ ] **Activity Analytics & Trends**: Visual charts and weekly/monthly adherence percentage analytics.
 - [ ] **PDF Reports**: Exportable medication and adherence reports for sharing with healthcare providers.
+- [ ] **App Theme**: Comprehensive dynamic color theming, healthcare-specific palettes, and dark mode customization.
 
 ---
 
@@ -219,24 +216,26 @@ npm test
 
 ## 7. Known Limitations & Operating Constraints
 
-- **Exact Alarms & Permissions**:
-  - Android 12+ (API 31+) and Android 14+ (API 34+) require exact alarm permissions (`SCHEDULE_EXACT_ALARM` or `USE_EXACT_ALARM`) to fire medication reminder alarms at exact clock times.
-  - When exact alarm permission is unavailable or denied, DoseCircle gracefully falls back to inexact alarms via `AlarmManager.setAndAllowWhileIdle()` and displays a small dismissible banner on the Today screen directing the user to system settings.
-  - **Google Play Policy on `USE_EXACT_ALARM`**: Under Google Play policies, `USE_EXACT_ALARM` is restricted to qualifying alarm clock and calendar applications; Google Play may reject apps that declare this permission without meeting specific core-use criteria. Because DoseCircle is distributed directly via APK builds rather than the Google Play Store, declaring `USE_EXACT_ALARM` (alongside `SCHEDULE_EXACT_ALARM` with `maxSdkVersion="32"`) ensures reliable exact alarm scheduling across modern Android versions without requiring manual user toggling in settings on supported builds.
-  - Android 13+ (API 33+) requires runtime `POST_NOTIFICATIONS` permission to show heads-up alerts and caregiver notification banners.
-- **Battery Optimization & OEM Restrictions**:
-  - Device manufacturers with customized Android flavors (such as realme / ColorOS, Xiaomi / MIUI / HyperOS, OnePlus / OxygenOS, Huawei / EMUI) aggressively restrict background tasks.
-  - For continuous alarm delivery, users on these devices must set DoseCircle's battery usage to **"Unrestricted"** and enable **"Auto-start"** / **"Allow background activity"**.
-- **Force-Stopped App Limitation**:
-  - In accordance with core Android OS security design, if an application is force-stopped by the user via Android Settings (`Settings > Apps > Force Stop`), the OS places the app in a stopped state. All scheduled alarms, WorkManager jobs, and FCM background delivery are blocked until the user manually relaunches the app.
-- **Six-Hour Stale-Dose Cutoff**:
-  - The Cloudflare Worker enforces a strict 6-hour cutoff (`STALE_CUTOFF_MS = 6 * 60 * 60 * 1000`). If a missed dose was scheduled more than 6 hours in the past (e.g. during a backup restore or extended offline period), notification dispatch is skipped (`skipped: "dose_too_old"`) to avoid inundating caregivers with outdated alerts.
-- **At-Least-Once Delivery & Duplicate Suppression**:
-  - FCM push messaging follows an at-least-once delivery contract. To prevent caregivers from receiving duplicate notification banners, DoseCircle applies dual-layer suppression:
-    1. *Server-Side*: Firestore `notifyDeliveries` atomic transaction locks prevent multiple FCM dispatches for the same dose event.
-    2. *Client-Side*: `DoseCircleMessagingService` checks persistent `SharedPreferences` cache for `stableNotificationId` before posting notification banners.
-- **Online Patient Requirement for Escalation**:
-  - Missed-dose escalation requires that the patient's device be powered on and connected to the internet. The local alarm or `MissedSweepWorker` marks the dose as missed and initiates the sync to Firestore and Cloudflare Worker. If a patient's phone is powered off or disconnected, missed-dose escalation cannot trigger until the device reconnects.
+1. **Local-Only Medicine Photos**:
+   - Medicine photos attached to medication records are stored locally on the patient's device only. They are not uploaded to Firestore, are not restored on a new phone during account restore, and cannot be viewed by caregivers on the Caregiver Dashboard.
+2. **Exact Alarms & Direct APK Distribution**:
+   - Under Google Play policies, declaring `USE_EXACT_ALARM` is restricted to qualifying alarm clock and calendar applications, and apps that do not meet strict core-use criteria may be rejected from the Play Store. Because DoseCircle is distributed directly via APK builds rather than the Google Play Store, declaring `USE_EXACT_ALARM` (with `SCHEDULE_EXACT_ALARM` restricted to `maxSdkVersion="32"`) ensures reliable exact alarm scheduling across modern Android versions (Android 12+ and 14+) without requiring manual user toggles in Settings.
+3. **Exact-Alarm Fallback & Permission-Change Receiver**:
+   - When exact-alarm permission is unavailable or denied, DoseCircle gracefully falls back to inexact alarms via `AlarmManager.setAndAllowWhileIdle()` and displays a small dismissible banner on the Today screen directing the user to system settings. The `ExactAlarmPermissionReceiver` is implemented and registered in the manifest to reschedule alarms when permissions change, but because Android 14 automatically grants `USE_EXACT_ALARM` at install time without sending runtime transition broadcasts, runtime verification of the permission-change receiver on API 31/32 remains outstanding.
+4. **Force-Stopped App Limitation**:
+   - In accordance with core Android OS security architecture, if an application is force-stopped by the user via system settings (`Settings > Apps > Force Stop`), the OS places the app in a stopped state. All scheduled alarms, WorkManager background jobs, and caregiver alerts cannot be dispatched or delivered until the user manually relaunches the app.
+5. **Six-Hour Stale-Dose Cutoff**:
+   - The Cloudflare Worker notification dispatcher enforces a strict 6-hour cutoff (`STALE_CUTOFF_MS = 6 * 60 * 60 * 1000`). If a missed dose was scheduled more than 6 hours in the past (e.g. during extended offline periods or historical backup restores), notification dispatch is skipped (`skipped: "dose_too_old"`) to avoid inundating caregivers with obsolete alerts.
+6. **At-Least-Once Delivery & Duplicate Suppression**:
+   - FCM push messaging follows an at-least-once delivery contract. To prevent caregivers from receiving duplicate notification banners, DoseCircle applies dual-layer suppression:
+     - *Server-Side*: Atomic Firestore transactions in the `notifyDeliveries` collection acquire exclusive delivery leases and record completion states before dispatching FCM payloads.
+     - *Client-Side*: `DoseCircleMessagingService` maintains a persistent deduplication cache in `SharedPreferences` for `stableNotificationId` before posting notification banners.
+7. **Online Patient Requirement for Escalation**:
+   - Missed-dose escalation requires that the patient's device be powered on and connected to the internet. Detection occurs via local alarm triggers or periodic `MissedSweepWorker` checks that record the missed status in Firestore and invoke the Cloudflare Worker dispatcher. If a patient's phone is powered off or disconnected from the internet, missed doses cannot be detected or escalated until the device powers back on and reconnects.
+8. **OEM Battery Optimization & Background Execution**:
+   - Device manufacturers with aggressive power-management implementations (such as realme / OPPO ColorOS, Xiaomi MIUI / HyperOS, OnePlus OxygenOS, Huawei EMUI, Samsung One UI) restrict background processes and alarms. To ensure reliable alarm delivery and background synchronization, users on these devices may need to configure DoseCircle's app info settings to set Battery usage to **"Unrestricted"** and enable **"Auto-start"** / **"Allow background activity"**.
+9. **Room Database Schema Migrations**:
+   - The local Room SQLite database maintains a versioned schema export (`app/schemas/com.nagi.dosecircle.data.database.AppDatabase/`). Any changes to Room entities or database structure require incrementing the database version in `AppDatabase.kt` and writing an explicit `Migration` path to prevent runtime crashes or data loss during app updates.
 
 ---
 
