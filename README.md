@@ -46,12 +46,12 @@ DoseCircle bridges the gap between patient medication adherence and caregiver pe
   - Email & Password sign-up and sign-in with Firebase Authentication.
   - Google Sign-In using Android Credential Manager (`GoogleAuthClient`).
   - Password reset via Firebase Authentication.
+- [x] **Bottom Navigation**: Persistent bottom navigation bar across main app sections.
 
 ### Optional & Planned Features
 - [ ] **Activity Screen**: Dedicated UI screen displaying daily activity, pedometer tracking, and step progress.
 - [ ] **Senior Mode**: High-contrast, simplified UI with enlarged touch targets and streamlined navigation for elderly users.
 - [ ] **App Theme**: Comprehensive dynamic color theming, healthcare-specific palettes, and dark mode customization.
-- [ ] **Bottom Navigation**: Unified persistent bottom navigation bar across main app sections.
 - [ ] **Prescription OCR via ML Kit**: Automatic extraction of medication name, dosage, and frequency from prescription images.
 - [ ] **Activity Analytics & Trends**: Visual charts and weekly/monthly adherence percentage analytics.
 - [ ] **PDF Reports**: Exportable medication and adherence reports for sharing with healthcare providers.
