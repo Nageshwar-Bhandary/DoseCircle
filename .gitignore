@@ -1,4 +1,6 @@
+
 *.iml
+.idea/
 .gradle
 /local.properties
 local.properties
@@ -32,4 +34,3 @@ node_modules/
 # Wrangler cache (Cloudflare account metadata, not credentials)
 worker/.wrangler/
 .wrangler/
-
