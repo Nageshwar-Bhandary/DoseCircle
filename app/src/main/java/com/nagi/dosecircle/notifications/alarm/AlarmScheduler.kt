@@ -27,11 +27,6 @@ class AlarmScheduler(
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
 
     suspend fun scheduleForSchedule(scheduleId: Long): Int {
-        if (!PermissionHelper.canScheduleExactAlarms(context)) {
-            Log.w(TAG, "Exact alarms permission not granted. Skipping schedule: $scheduleId")
-            return 0
-        }
-
         val schedule = medicationRepository.getScheduleById(scheduleId) ?: return 0
         if (!schedule.isActive) {
             cancelForSchedule(scheduleId)
@@ -56,7 +51,7 @@ class AlarmScheduler(
             )
 
             if (nextTriggerMillis != null) {
-                scheduleExactAlarm(
+                scheduleAlarm(
                     scheduleTime = time,
                     medicationId = schedule.medicationId,
                     personId = schedule.personId,
@@ -71,11 +66,6 @@ class AlarmScheduler(
     }
 
     suspend fun scheduleNextForScheduleTime(scheduleTimeId: Long): Long? {
-        if (!PermissionHelper.canScheduleExactAlarms(context)) {
-            Log.w(TAG, "Exact alarms permission not granted. Skipping scheduleTimeId: $scheduleTimeId")
-            return null
-        }
-
         val scheduleTime = medicationRepository.getScheduleTimeById(scheduleTimeId) ?: return null
         val schedule = medicationRepository.getScheduleById(scheduleTime.scheduleId) ?: return null
         if (!schedule.isActive) {
@@ -98,7 +88,7 @@ class AlarmScheduler(
         )
 
         if (nextTriggerMillis != null) {
-            scheduleExactAlarm(
+            scheduleAlarm(
                 scheduleTime = scheduleTime,
                 medicationId = schedule.medicationId,
                 personId = schedule.personId,
@@ -149,11 +139,6 @@ class AlarmScheduler(
     }
 
     suspend fun scheduleAlarmsForPerson(personId: Long): Int {
-        if (!PermissionHelper.canScheduleExactAlarms(context)) {
-            Log.w(TAG, "Exact alarms permission not granted. Skipping scheduleAlarmsForPerson: $personId")
-            return 0
-        }
-
         val activeSchedules = medicationRepository.getAllActiveSchedules().filter { it.personId == personId }
         var totalScheduled = 0
         for (schedule in activeSchedules) {
@@ -164,11 +149,6 @@ class AlarmScheduler(
     }
 
     suspend fun rescheduleAll(): Int {
-        if (!PermissionHelper.canScheduleExactAlarms(context)) {
-            Log.w(TAG, "Exact alarms permission not granted. Skipping rescheduleAll.")
-            return 0
-        }
-
         val activeSchedules = medicationRepository.getAllActiveSchedules()
         var totalScheduled = 0
         for (schedule in activeSchedules) {
@@ -178,7 +158,16 @@ class AlarmScheduler(
         return totalScheduled
     }
 
-    private fun scheduleExactAlarm(
+    fun scheduleExactAlarm(
+        scheduleTime: ScheduleTime,
+        medicationId: Long,
+        personId: Long,
+        triggerAtMillis: Long
+    ) {
+        scheduleAlarm(scheduleTime, medicationId, personId, triggerAtMillis)
+    }
+
+    private fun scheduleAlarm(
         scheduleTime: ScheduleTime,
         medicationId: Long,
         personId: Long,
@@ -200,18 +189,40 @@ class AlarmScheduler(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        try {
-            alarmManager.setExactAndAllowWhileIdle(
+        val canScheduleExact = PermissionHelper.canScheduleExactAlarms(context)
+        if (canScheduleExact) {
+            try {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+                Log.d(
+                    TAG,
+                    "Scheduled alarm for scheduleTimeId=${scheduleTime.id} at $triggerAtMillis (${LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(triggerAtMillis), ZoneId.systemDefault())})"
+                )
+            } catch (e: SecurityException) {
+                Log.e(TAG, "SecurityException while scheduling exact alarm for timeId=${scheduleTime.id}", e)
+                Log.w(
+                    TAG,
+                    "Falling back to inexact alarm for scheduleTimeId=${scheduleTime.id} at $triggerAtMillis using setAndAllowWhileIdle"
+                )
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            }
+        } else {
+            Log.w(
+                TAG,
+                "Exact alarms permission not granted. Scheduling inexact alarm for scheduleTimeId=${scheduleTime.id} at $triggerAtMillis (${LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(triggerAtMillis), ZoneId.systemDefault())}) using setAndAllowWhileIdle"
+            )
+            alarmManager.setAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 triggerAtMillis,
                 pendingIntent
             )
-            Log.d(
-                TAG,
-                "Scheduled alarm for scheduleTimeId=${scheduleTime.id} at $triggerAtMillis (${LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(triggerAtMillis), ZoneId.systemDefault())})"
-            )
-        } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException while scheduling exact alarm for timeId=${scheduleTime.id}", e)
         }
     }
 
