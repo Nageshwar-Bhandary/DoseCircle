@@ -41,6 +41,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.nagi.dosecircle.ui.screens.ActivityScreen
 import com.nagi.dosecircle.ui.screens.AddMedicationScreen
 import com.nagi.dosecircle.ui.screens.CareForScreen
 import com.nagi.dosecircle.ui.screens.CaregiversScreen
@@ -51,6 +52,7 @@ import com.nagi.dosecircle.ui.screens.MedicationListScreen
 import com.nagi.dosecircle.ui.screens.PatientDashboardScreen
 import com.nagi.dosecircle.ui.screens.SignInScreen
 import com.nagi.dosecircle.ui.theme.DoseCircleTheme
+import com.nagi.dosecircle.viewmodel.ActivityViewModel
 import com.nagi.dosecircle.viewmodel.AddMedicationViewModel
 import com.nagi.dosecircle.viewmodel.CareForViewModel
 import com.nagi.dosecircle.viewmodel.CaregiverViewModel
@@ -192,6 +194,22 @@ class MainActivity : ComponentActivity() {
                                 viewModel = viewModel,
                                 onNavigateBack = {
                                     finish()
+                                },
+                                onNavigateToActivity = {
+                                    navController.navigate("activity")
+                                }
+                            )
+                        }
+
+                        composable("activity") {
+                            val viewModel: ActivityViewModel = viewModel(
+                                factory = ActivityViewModel.provideFactory(app)
+                            )
+
+                            ActivityScreen(
+                                viewModel = viewModel,
+                                onNavigateBack = {
+                                    navController.popBackStack()
                                 }
                             )
                         }

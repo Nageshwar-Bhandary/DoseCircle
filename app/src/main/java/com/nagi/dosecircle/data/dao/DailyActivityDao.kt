@@ -20,6 +20,12 @@ interface DailyActivityDao {
     @Query("UPDATE daily_activities SET steps = :steps WHERE id = :id")
     suspend fun updateSteps(id: Long, steps: Int)
 
+    @Query("UPDATE daily_activities SET goal = :goal WHERE id = :id")
+    suspend fun updateGoal(id: Long, goal: Int)
+
+    @Query("SELECT * FROM daily_activities WHERE personId = :personId AND date = :date LIMIT 1")
+    fun getActivityFlowForDate(personId: Long, date: String): Flow<DailyActivity?>
+
     @Transaction
     suspend fun getOrInsertActivity(personId: Long, date: String, defaultGoal: Int = 6000): DailyActivity {
         val existing = getActivityForDate(personId, date)
